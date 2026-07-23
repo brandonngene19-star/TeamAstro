@@ -79,12 +79,9 @@
                     <div class="btns">
                         <button class="btn btn-export" type="button" onclick="exportToCSV('interns')">
                             <i class="fas fa-download"></i>
-                            <span>Export</span>
+                            <span>Export</span>g
                         </button>
-                        <button class="btn btn-add-user" type="button" onclick="openAddUserModal()">
-                            <i class="fas fa-user-plus"></i>
-                            <span>Register Intern</span>
-                        </button>
+                       
                     </div>
                 </div>
             </div>
@@ -117,7 +114,10 @@
                     </div>
                 </div>
             </div>
-
+ <button class="btn btn-add-user" type="button" onclick="openAddUserModal()">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Register Intern</span>
+                        </button>
             <div class="custom-modal-overlay add-user-modal-overlay" id="addUserModal" hidden>
                 <div class="custom-modal add-user-modal">
                     <div class="custom-modal-header">
@@ -129,7 +129,10 @@
                             <p>Add a new intern record.</p>
                         </div>
                     </div>
-
+<button class="btn btn-add-user" type="button" onclick="openAddUserModal()">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Register Intern</span>
+                        </button>
             <form class="row g-3 needs-validation add-user-form" novalidate onsubmit="handleFormSubmit(event, 'intern')">
                 <div class="col-md-4">
                     <label for="validationCustom01" class="form-label">First name</label>
