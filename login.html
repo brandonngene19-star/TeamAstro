@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InternFlow Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login.css">
+    <script src="indexdb.js" defer></script>
+</head>
+<body>
+    <!-- Wraps the full two-column login layout. -->
+    <main class="login-shell">
+        <!-- Creates the bright left brand and preview section. -->
+        <section class="login-showcase" aria-label="InternFlow overview">
+            <!-- Holds the logo, welcome copy, stats, and illustration. -->
+            <div class="showcase-content">
+                <!-- Displays the InternFlow brand mark and text. -->
+                <div class="brand-lockup">
+                    <!-- Shows a local-style icon mark using Font Awesome. -->
+                    <span class="brand-mark"><i class="fas fa-user-graduate"></i></span>
+                    <!-- Groups the brand title and subtitle. -->
+                    <div>
+                        <!-- Shows the product name. -->
+                        <h1>Intern<span>Flow</span></h1>
+                        <!-- Describes the product category. -->
+                        <p>Internship Management System</p>
+                    </div>
+                </div>
+
+                <!-- Introduces returning administrators. -->
+                <div class="welcome-copy">
+                    <!-- Main welcome headline. -->
+                    <h2>Welcome Back!</h2>
+                    <!-- Short product value message. -->
+                    <p>Sign in to your admin account to manage interns, attendance, supervisor assignments, and reports in one place.</p>
+                </div>
+
+                <!-- Displays three compact dashboard metrics. -->
+                
+
+                <!-- Creates the illustrated dashboard workspace scene. -->
+                <div class="workspace-preview" aria-hidden="true">
+                    <!-- Left floating attendance card. -->
+                    <div class="mini-card attendance-card">
+                        <!-- Attendance card title. -->
+                        <span>Today's Attendance</span>
+                        <!-- Circular chart styled with CSS. -->
+                        <div class="donut-chart"></div>
+                        <!-- Attendance legend. -->
+                        <ul>
+                            <!-- Present legend item. -->
+                            <li><b class="dot present"></b>Present</li>
+                            <!-- Late legend item. -->
+                            <li><b class="dot late"></b>Late</li>
+                            <!-- Absent legend item. -->
+                            <li><b class="dot absent"></b>Absent</li>
+                        </ul>
+                    </div>
+                    <!-- Center monitor illustration. -->
+                    <div class="desk-scene">
+                        <!-- Decorative person shape. -->
+                        <div class="person"></div>
+                        <!-- Dashboard monitor. -->
+                        <div class="monitor">
+                            <!-- Monitor top bar. -->
+                            <div class="monitor-bar"></div>
+                            <!-- Monitor chart line. -->
+                            <div class="chart-line"></div>
+                            <!-- Monitor card grid. -->
+                            <div class="monitor-widgets"></div>
+                        </div>
+                        <!-- Desk surface. -->
+                        <div class="desk"></div>
+                    </div>
+                    <!-- Right floating new interns card. -->
+                    <div class="mini-card interns-card">
+                        <!-- New interns card title. -->
+                        <span>New Interns</span>
+                        <!-- Avatar row. -->
+                        <div class="avatar-row">
+                            <!-- First avatar. -->
+                            <i></i>
+                            <!-- Second avatar. -->
+                            <i></i>
+                            <!-- Third avatar. -->
+                            <i></i>
+                            <!-- Add avatar. -->
+                            <b>+</b>
+                        </div>
+                    </div>
+                    <!-- Right floating deadline card. -->
+                    <div class="mini-card dates-card">
+                        <!-- End dates card title. -->
+                        <span>Upcoming End Dates</span>
+                        <!-- End dates card content. -->
+                        <strong><i class="fas fa-calendar-day"></i> 5</strong>
+                        <!-- End dates caption. -->
+                        <small>Internships ending this month</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Creates the dark right login section. -->
+        <section class="login-panel" aria-label="Admin login">
+            <!-- Decorative background circle. -->
+            <div class="glow-circle top"></div>
+            <!-- Decorative background circle. -->
+            <div class="glow-circle middle"></div>
+            <!-- Decorative background circle. -->
+            <div class="glow-circle bottom"></div>
+            <!-- Holds the login form and footer content. -->
+            <div class="login-panel-content">
+                <!-- Header area above the login card. -->
+                <div class="login-heading">
+                    <!-- Lock icon badge. -->
+                    <span><i class="fas fa-lock"></i></span>
+                    <!-- Heading text group. -->
+                    <div>
+                        <!-- Login title. -->
+                        <h2>Admin Login</h2>
+                        <!-- Login instruction. -->
+                        <p>Please enter your credentials to continue</p>
+                        <!-- Small accent divider. -->
+                        <i></i>
+                    </div>
+                </div>
+
+                <!-- Login card that contains the actual form. -->
+                <form class="login-card" id="loginForm" novalidate>
+                    <!-- Email field label and control. -->
+                    <label class="login-field" for="loginEmail">
+                        <!-- Email label text. -->
+                        <span>Email Address</span>
+                        <!-- Email input wrapper with icon. -->
+                        <div class="input-wrap">
+                            <!-- Email icon. -->
+                            <i class="far fa-envelope"></i>
+                            <!-- Email input connected to JavaScript by id. -->
+                            <input id="loginEmail" name="email" type="email" placeholder="admin@company.com" autocomplete="email" required>
+                        </div>
+                    </label>
+
+                    <!-- Password field label and control. -->
+                    <label class="login-field" for="loginPassword">
+                        <!-- Password label text. -->
+                        <span>Password</span>
+                        <!-- Password input wrapper with icons. -->
+                        <div class="input-wrap">
+                            <!-- Password lock icon. -->
+                            <i class="fas fa-lock"></i>
+                            <!-- Password input connected to JavaScript by id. -->
+                            <input id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+                            <!-- Toggle button for showing or hiding the password. -->
+                            <button class="password-toggle" type="button" id="togglePassword" aria-label="Show password">
+                                <!-- Eye icon for the password toggle. -->
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                    </label>
+
+                    <!-- Row containing remember-me and forgot-password controls. -->
+                    <div class="login-options">
+                        <!-- Remember-me checkbox label. -->
+                        <label>
+                            <!-- Remember-me checkbox connected to JavaScript by id. -->
+                            <input id="rememberLogin" type="checkbox" checked>
+                            <!-- Visible checkbox text. -->
+                            <span>Remember me</span>
+                        </label>
+                        <!-- Placeholder forgot-password link. -->
+                        <button type="button" id="forgotPassword">Forgot Password?</button>
+                    </div>
+
+                    <!-- Login error text that JavaScript fills when validation fails. -->
+                    <p class="login-error" id="loginError" role="alert"></p>
+
+                    <!-- Main sign-in submit button. -->
+                    <button class="signin-button" type="submit">
+                        <!-- Sign-in icon. -->
+                        <i class="fas fa-right-to-bracket"></i>
+                        <!-- Sign-in label. -->
+                        <span>Sign In</span>
+                    </button>
+
+                    <!-- Divider between email login and Google login. -->
+                    <div class="login-divider">
+                        <!-- Divider text. -->
+                        <span>OR</span>
+                    </div>
+
+                    <!-- Google login placeholder button connected to JavaScript. -->
+                    <button class="google-button" type="button" id="googleLogin">
+                        <!-- Google letter mark. -->
+                        <b>G</b>
+                        <!-- Google button label. -->
+                        <span>Sign in with Google</span>
+                    </button>
+
+                    <!-- Row that offers account creation from the login screen. 
+                    <div class="signup-prompt">-->
+                        <!-- Short prompt before the sign-up action. -->
+                       <!-- <span>New admin?</span>-->
+                        <!-- Button that opens the sign-up fields. -->
+                       <!-- <button type="button" id="showSignup">Sign Up</button>
+                    </div> -->
+
+                    <!-- Hidden sign-up form that creates local demo login credentials. -->
+                    <div class="signup-panel" id="signupPanel" hidden>
+                        <!-- Sign-up panel title. -->
+                        <h3>Create Admin Account</h3>
+                        <!-- Sign-up full-name field. -->
+                        <label class="login-field" for="signupName">
+                            <!-- Full-name label text. -->
+                            <span>Full Name</span>
+                            <!-- Full-name input wrapper. -->
+                            <div class="input-wrap">
+                                <!-- Full-name icon. -->
+                                <i class="far fa-user"></i>
+                                <!-- Full-name input connected to JavaScript by id. -->
+                                <input id="signupName" name="signupName" type="text" placeholder="Enter your name" autocomplete="name">
+                            </div>
+                        </label>
+                        <!-- Sign-up email field. -->
+                        <label class="login-field" for="signupEmail">
+                            <!-- Sign-up email label text. -->
+                            <span>Email Address</span>
+                            <!-- Sign-up email input wrapper. -->
+                            <div class="input-wrap">
+                                <!-- Sign-up email icon. -->
+                                <i class="far fa-envelope"></i>
+                                <!-- Sign-up email input connected to JavaScript by id. -->
+                                <input id="signupEmail" name="signupEmail" type="email" placeholder="admin@company.com" autocomplete="email">
+                            </div>
+                        </label>
+                        <!-- Sign-up password field. -->
+                        <label class="login-field" for="signupPassword">
+                            <!-- Sign-up password label text. -->
+                            <span>Password</span>
+                            <!-- Sign-up password input wrapper. -->
+                            <div class="input-wrap">
+                                <!-- Sign-up password icon. -->
+                                <i class="fas fa-lock"></i>
+                                <!-- Sign-up password input connected to JavaScript by id. -->
+                                <input id="signupPassword" name="signupPassword" type="password" placeholder="Create a password" autocomplete="new-password">
+                            </div>
+                        </label>
+                        <!-- Sign-up confirmation password field. -->
+                        <label class="login-field" for="signupConfirm">
+                            <!-- Confirmation password label text. -->
+                            <span>Confirm Password</span>
+                            <!-- Confirmation password input wrapper. -->
+                            <div class="input-wrap">
+                                <!-- Confirmation password icon. -->
+                                <i class="fas fa-check-circle"></i>
+                                <!-- Confirmation input connected to JavaScript by id. -->
+                                <input id="signupConfirm" name="signupConfirm" type="password" placeholder="Confirm your password" autocomplete="new-password">
+                            </div>
+                        </label>
+                        <!-- Button that saves the sign-up values for login. -->
+                        <button class="signup-button" type="button" id="createAccount">
+                            <!-- Sign-up button icon. -->
+                            <i class="fas fa-user-plus"></i>
+                            <!-- Sign-up button label. -->
+                            <span>Create Account</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Footer under the login card. -->
+                <footer class="login-footer">
+                    <!-- Security reassurance block. -->
+                    <div>
+                        <!-- Shield icon. -->
+                        <i class="far fa-shield-alt"></i>
+                        <!-- Security copy. -->
+                        <p><strong>Secure Login</strong><br>Your data is safe with us.</p>
+                    </div>
+                    <!-- Copyright block. -->
+                    <p>&copy; 2025 InternFlow.<br>All rights reserved.</p>
+                </footer>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

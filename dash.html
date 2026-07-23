@@ -47,7 +47,7 @@
                     </svg></i></a>User<i class="fas fa-chevron-down user-submenu-chevron"></i></span>
             <div class="user-submenu">
                 <a href="supervisors.html"><i class="fas fa-user-tie"></i><span>Supervisors</span></a>
-                <a href="interns.html"><i class="fas fa-users"></i><span>Interns</span></a>
+                <a href="dash.html"><i class="fas fa-users"></i><span>Interns</span></a>
             </div>
        
         <span class="attendance-link"><a href=""><i class="bi bi-list-check"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-check" viewBox="0 0 16 16">
@@ -83,7 +83,7 @@
                         </button>
                         <button class="btn btn-add-user" type="button" onclick="openAddUserModal()">
                             <i class="fas fa-plus"></i>
-                            <span>Register Intern</span>
+                            <span>Add User</span>
                         </button>
                     </div>
                 </div>
@@ -128,10 +128,11 @@
         <div class="custom-modal add-user-modal">
             <div class="custom-modal-header">
                 <div class="custom-modal-icon info">
-                    
+                    <i class="fas fa-user-plus"></i>
                 </div>
                 <div>
-                    
+                    <h3>Add User</h3>
+                    <p>Register a new intern for attendance and performance tracking.</p>
                 </div>
             </div>
 
@@ -161,12 +162,6 @@
                     <label for="validationCustom03" class="form-label">Phone Number</label>
                     <input type="tel" class="form-control" id="validationCustom03" required>
                     <div class="invalid-feedback">Please provide a valid number.</div>
-                    <div class="valid-feedback">Looks good!</div>
-                </div>
-                <div class="col-md-6">
-                    <label for="validationCustom06" class="form-label">School</label>
-                    <input type="text" class="form-control" id="validationCustom06" placeholder="Enter school name" required>
-                    <div class="invalid-feedback">Please provide a school name.</div>
                     <div class="valid-feedback">Looks good!</div>
                 </div>
                 <div class="col-md-3">

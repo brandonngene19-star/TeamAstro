@@ -90,11 +90,9 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
             const lockedAttribute = field.disabled ? 'disabled' : '';
 
             if (field.type === 'select') {
-                const optionsHTML = field.options.map(option => {
-                    const optionValue = typeof option === 'object' ? option.value : option;
-                    const optionLabel = typeof option === 'object' ? option.label : option;
-                    return `<option value="${escapeHTML(optionValue)}" ${String(optionValue) === String(field.value) ? 'selected' : ''}>${escapeHTML(optionLabel)}</option>`;
-                }).join('');
+                const optionsHTML = field.options.map(option => (
+                    `<option value="${escapeHTML(option)}" ${option === field.value ? 'selected' : ''}>${escapeHTML(option)}</option>`
+                )).join('');
 
                 return `
                     <label class="custom-modal-field">
@@ -230,13 +228,6 @@ function initDatabase() {
                 db.createObjectStore('settings', { keyPath: 'key' });
             }
 
-            // Create Groups Store
-            if (!db.objectStoreNames.contains('groups')) {
-                const groupStore = db.createObjectStore('groups', { keyPath: 'id' });
-                groupStore.createIndex('name', 'name', { unique: false });
-                groupStore.createIndex('supervisorId', 'supervisorId', { unique: false });
-            }
-
             console.log('Database schema created');
         };
     });
@@ -351,108 +342,6 @@ function getAllSupervisors() {
             console.error('Error retrieving supervisors:', request.error);
             reject(request.error);
         };
-    });
-}
-
-// Get Supervisor by ID
-function getSupervisorById(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readonly');
-        const store = transaction.objectStore('supervisors');
-        const request = store.get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-}
-
-// Update Supervisor
-function updateSupervisor(supervisor) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readwrite');
-        const store = transaction.objectStore('supervisors');
-        const request = store.put(supervisor);
-
-        request.onsuccess = () => {
-            console.log('Supervisor updated:', supervisor);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error updating supervisor:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-// Delete Supervisor
-function deleteSupervisor(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readwrite');
-        const store = transaction.objectStore('supervisors');
-        const request = store.delete(id);
-
-        request.onsuccess = () => {
-            console.log('Supervisor deleted with ID:', id);
-            resolve();
-        };
-
-        request.onerror = () => {
-            console.error('Error deleting supervisor:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function addGroup(group) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readwrite');
-        const store = transaction.objectStore('groups');
-        const request = store.add(group);
-
-        request.onsuccess = () => {
-            console.log('Group added:', group);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding group:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function getAllGroups() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readonly');
-        const store = transaction.objectStore('groups');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Groups retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving groups:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function updateGroup(group) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readwrite');
-        const store = transaction.objectStore('groups');
-        const request = store.put(group);
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
     });
 }
 
@@ -771,7 +660,6 @@ function handleFormSubmit(event, formType) {
         const lastName = document.getElementById('validationCustom02')?.value.trim();
         const email = document.getElementById('validationCustomUsername')?.value.trim();
         const phone = document.getElementById('validationCustom03')?.value.trim();
-        const school = document.getElementById('validationCustom06')?.value.trim();
         const department = document.getElementById('validationCustom04')?.value;
         const gender = document.getElementById('validationCustom05')?.value;
 
@@ -790,10 +678,6 @@ function handleFormSubmit(event, formType) {
         }
         if (!phone) {
             showAlert('Phone number is required!', 'warning');
-            return;
-        }
-        if (!school) {
-            showAlert('School is required!', 'warning');
             return;
         }
         if (!department || department === '') {
@@ -841,8 +725,6 @@ function handleFormSubmit(event, formType) {
             email: email,
             // Store phone number as entered by user
             phone: phone,
-            // Store school as entered by user
-            school: school,
             // Store selected department
             department: department,
             // Store selected gender
@@ -861,10 +743,8 @@ function handleFormSubmit(event, formType) {
             showAlert('Intern registered successfully.', 'success');
             // Clear all form fields after successful registration
             event.target.reset();
-            // Close the dashboard registration modal when this form is inside one.
-            if (document.getElementById('addUserModal')) {
-                closeAddUserModal();
-            }
+            // Close the dashboard registration modal after a successful user save.
+            closeAddUserModal();
             // Refresh the dashboard user list so the new intern appears immediately.
             loadDashboardUsers();
         }).catch(error => {
@@ -917,9 +797,6 @@ function handleFormSubmit(event, formType) {
         addSupervisor(supervisor).then(() => {
             showAlert('Supervisor registered successfully.', 'success');
             event.target.reset();
-            if (document.getElementById('supervisorModal')) {
-                closeSupervisorModal();
-            }
             loadSupervisorsPage();
         }).catch(error => {
             showAlert('Error registering supervisor: ' + error, 'error');
@@ -1240,33 +1117,6 @@ function closeAddUserModal() {
     }, 180);
 }
 
-function openSupervisorModal() {
-    const modal = document.getElementById('supervisorModal');
-    if (!modal) return;
-
-    modal.hidden = false;
-    modal.classList.remove('closing');
-    document.body.classList.add('modal-open');
-}
-
-function closeSupervisorModal() {
-    const modal = document.getElementById('supervisorModal');
-    if (!modal || modal.hidden) return;
-
-    const form = modal.querySelector('form');
-    if (form) {
-        form.reset();
-        form.classList.remove('was-validated');
-    }
-
-    modal.classList.add('closing');
-    setTimeout(() => {
-        modal.hidden = true;
-        modal.classList.remove('closing');
-        document.body.classList.remove('modal-open');
-    }, 180);
-}
-
 // Format stored registration dates into a compact dashboard-friendly value.
 function formatDashboardDate(value) {
     if (!value) return '-';
@@ -1306,8 +1156,12 @@ async function loadDashboardUsers() {
             tableContainer.innerHTML = `
                 <div class="dashboard-empty-state">
                     <i class="fas fa-users"></i>
-                    <h3>No interns yet</h3>
+                    <h3>No users yet</h3>
                     <p>Add your first intern to start tracking records.</p>
+                    <button class="btn btn-add-user" type="button" onclick="openAddUserModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Add User</span>
+                    </button>
                 </div>
             `;
             return;
@@ -1325,26 +1179,10 @@ async function loadDashboardUsers() {
                     </div>
                 </td>
                 <td>${escapeHTML(intern.department)}</td>
-                <td>${escapeHTML(intern.school || '-')}</td>
                 <td>${escapeHTML(intern.phone)}</td>
                 <td>${escapeHTML(intern.gender)}</td>
-                <td>${escapeHTML(intern.supervisorName || 'Unassigned')}</td>
-                <td>${escapeHTML(intern.groupName || '-')}</td>
                 <td><span class="role-badge ${intern.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(intern.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="btn btn-sm btn-primary" type="button" title="Update intern" onclick="editIntern(${intern.id})">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button class="btn btn-sm btn-assign" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
-                            <i class="fas fa-user-tie"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" type="button" title="Delete intern" onclick="removeIntern(${intern.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
             </tr>
         `).join('');
 
@@ -1354,14 +1192,10 @@ async function loadDashboardUsers() {
                     <tr>
                         <th>User</th>
                         <th>Department</th>
-                        <th>School</th>
                         <th>Phone</th>
                         <th>Gender</th>
-                        <th>Supervisor</th>
-                        <th>Group</th>
                         <th>Role</th>
                         <th>Date Added</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1375,201 +1209,13 @@ async function loadDashboardUsers() {
     }
 }
 
-async function editIntern(internId) {
-    try {
-        const intern = await getInternById(internId);
-        if (!intern) {
-            showAlert('Intern record was not found.', 'warning');
-            return;
-        }
-
-        const values = await showCustomModal({
-            title: 'Update Intern',
-            message: `${intern.firstName} ${intern.lastName}`,
-            confirmText: 'Update',
-            fields: [
-                { label: 'First name', name: 'firstName', value: intern.firstName || '' },
-                { label: 'Last name', name: 'lastName', value: intern.lastName || '' },
-                { label: 'Email', name: 'email', value: intern.email || '' },
-                { label: 'Phone', name: 'phone', value: intern.phone || '' },
-                { label: 'School', name: 'school', value: intern.school || '' },
-                {
-                    label: 'Department',
-                    name: 'department',
-                    type: 'select',
-                    value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
-                },
-                {
-                    label: 'Gender',
-                    name: 'gender',
-                    type: 'select',
-                    value: intern.gender || 'Male',
-                    options: ['Male', 'Female']
-                },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: intern.role || 'User',
-                    options: ['User', 'Admin']
-                }
-            ]
-        });
-
-        if (!values) return;
-
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!values.firstName.trim() || !values.lastName.trim() || !values.email.trim() || !values.phone.trim() || !values.school.trim() || !values.department || !values.gender) {
-            showAlert('Please complete all intern fields.', 'warning');
-            return;
-        }
-        if (!nameRegex.test(values.firstName.trim()) || !nameRegex.test(values.lastName.trim())) {
-            showAlert('Intern names can only contain letters and spaces.', 'error');
-            return;
-        }
-        if (!emailRegex.test(values.email.trim())) {
-            showAlert('Please enter a valid email address.', 'error');
-            return;
-        }
-        if (!/^\d{10,}$/.test(values.phone.replace(/[\s\-()]/g, ''))) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
-            return;
-        }
-
-        await updateIntern({
-            ...intern,
-            firstName: values.firstName.trim(),
-            lastName: values.lastName.trim(),
-            email: values.email.trim(),
-            phone: values.phone.trim(),
-            school: values.school.trim(),
-            department: values.department,
-            gender: values.gender,
-            role: values.role || 'User',
-            updatedAt: new Date().toISOString()
-        });
-
-        showAlert('Intern updated successfully.', 'success');
-        await loadDashboardUsers();
-        if (document.querySelector('[data-supervisor-table]')) {
-            await loadSupervisorsPage();
-            await loadGroupTools();
-        }
-    } catch (error) {
-        showAlert('Error updating intern: ' + error, 'error');
-    }
-}
-
-async function assignInternSupervisor(internId) {
-    try {
-        const [intern, supervisors] = await Promise.all([
-            getInternById(internId),
-            getAllSupervisors()
-        ]);
-
-        if (!intern) {
-            showAlert('Intern record was not found.', 'warning');
-            return;
-        }
-        if (supervisors.length === 0) {
-            showAlert('Register a supervisor before assigning interns.', 'warning');
-            return;
-        }
-
-        const values = await showCustomModal({
-            title: 'Assign Supervisor',
-            message: `${intern.firstName} ${intern.lastName}`,
-            confirmText: 'Assign',
-            fields: [
-                {
-                    label: 'Supervisor',
-                    name: 'supervisorId',
-                    type: 'select',
-                    value: intern.supervisorId || supervisors[0].id,
-                    options: supervisors.map(supervisor => ({
-                        value: supervisor.id,
-                        label: `${supervisor.firstName} ${supervisor.lastName} - ${supervisor.department}`
-                    }))
-                }
-            ]
-        });
-
-        if (!values) return;
-
-        const supervisor = supervisors.find(item => item.id === Number(values.supervisorId));
-        if (!supervisor) {
-            showAlert('Supervisor record was not found.', 'warning');
-            return;
-        }
-
-        await updateIntern({
-            ...intern,
-            supervisorId: supervisor.id,
-            supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
-            updatedAt: new Date().toISOString()
-        });
-
-        showAlert('Supervisor assigned successfully.', 'success');
-        await loadDashboardUsers();
-    } catch (error) {
-        showAlert('Error assigning supervisor: ' + error, 'error');
-    }
-}
-
-async function removeIntern(internId) {
-    try {
-        const intern = await getInternById(internId);
-        if (!intern) {
-            showAlert('Intern record was not found.', 'warning');
-            return;
-        }
-
-        const confirmed = await showCustomConfirm(
-            `Delete ${intern.firstName} ${intern.lastName}? This will also remove linked attendance and performance records.`,
-            {
-                title: 'Delete Intern',
-                confirmText: 'Delete',
-                danger: true
-            }
-        );
-
-        if (!confirmed) return;
-
-        const groups = await getAllGroups();
-        await Promise.all(groups
-            .filter(group => (group.internIds || []).includes(internId))
-            .map(group => updateGroup({
-                ...group,
-                internIds: (group.internIds || []).filter(id => id !== internId),
-                updatedAt: new Date().toISOString()
-            })));
-
-        await deleteInternWithRecords(internId);
-        showAlert('Intern deleted successfully.', 'success');
-        await loadDashboardUsers();
-    } catch (error) {
-        showAlert('Error deleting intern: ' + error, 'error');
-    }
-}
-
 // Load supervisors into the dedicated supervisors page table and summary cards.
 async function loadSupervisorsPage() {
     const tableContainer = document.querySelector('[data-supervisor-table]');
     if (!tableContainer) return;
 
     try {
-        const [supervisors, interns] = await Promise.all([
-            getAllSupervisors(),
-            getAllInterns()
-        ]);
-        const assignedInternCounts = interns.reduce((counts, intern) => {
-            if (intern.supervisorId) {
-                counts[intern.supervisorId] = (counts[intern.supervisorId] || 0) + 1;
-            }
-            return counts;
-        }, {});
+        const supervisors = await getAllSupervisors();
         const today = new Date().toISOString().split('T')[0];
         const departmentCount = new Set(supervisors.map(supervisor => supervisor.department).filter(Boolean)).size;
         const addedTodayCount = supervisors.filter(supervisor => supervisor.dateAdded?.startsWith(today)).length;
@@ -1606,22 +1252,8 @@ async function loadSupervisorsPage() {
                 </td>
                 <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
-                <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td><span class="role-badge ${supervisor.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(supervisor.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button class="btn btn-sm btn-assign" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
             </tr>
         `).join('');
 
@@ -1632,10 +1264,8 @@ async function loadSupervisorsPage() {
                         <th>Supervisor</th>
                         <th>Department</th>
                         <th>Phone</th>
-                        <th>Interns</th>
                         <th>Role</th>
                         <th>Date Added</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1646,320 +1276,6 @@ async function loadSupervisorsPage() {
     } catch (error) {
         console.error('Error loading supervisors:', error);
         showAlert('Error loading supervisors: ' + error, 'error');
-    }
-}
-
-async function editSupervisor(supervisorId) {
-    try {
-        const supervisor = await getSupervisorById(supervisorId);
-        if (!supervisor) {
-            showAlert('Supervisor record was not found.', 'warning');
-            return;
-        }
-
-        const values = await showCustomModal({
-            title: 'Update Supervisor',
-            message: `${supervisor.firstName} ${supervisor.lastName}`,
-            confirmText: 'Update',
-            fields: [
-                { label: 'First name', name: 'firstName', value: supervisor.firstName || '' },
-                { label: 'Last name', name: 'lastName', value: supervisor.lastName || '' },
-                { label: 'Email', name: 'email', value: supervisor.email || '' },
-                { label: 'Phone', name: 'phone', value: supervisor.phone || '' },
-                {
-                    label: 'Department',
-                    name: 'department',
-                    type: 'select',
-                    value: supervisor.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
-                },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: supervisor.role || 'User',
-                    options: ['User', 'Admin']
-                }
-            ]
-        });
-
-        if (!values) return;
-
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!values.firstName.trim() || !values.lastName.trim() || !values.email.trim() || !values.phone.trim() || !values.department) {
-            showAlert('Please complete all supervisor fields.', 'warning');
-            return;
-        }
-        if (!nameRegex.test(values.firstName.trim()) || !nameRegex.test(values.lastName.trim())) {
-            showAlert('Supervisor names can only contain letters and spaces.', 'error');
-            return;
-        }
-        if (!emailRegex.test(values.email.trim())) {
-            showAlert('Please enter a valid email address.', 'error');
-            return;
-        }
-        if (!/^\d{10,}$/.test(values.phone.replace(/[\s\-()]/g, ''))) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
-            return;
-        }
-
-        await updateSupervisor({
-            ...supervisor,
-            firstName: values.firstName.trim(),
-            lastName: values.lastName.trim(),
-            email: values.email.trim(),
-            phone: values.phone.trim(),
-            department: values.department,
-            role: values.role || 'User',
-            updatedAt: new Date().toISOString()
-        });
-        showAlert('Supervisor updated successfully.', 'success');
-        await loadSupervisorsPage();
-        await loadGroupTools();
-    } catch (error) {
-        showAlert('Error updating supervisor: ' + error, 'error');
-    }
-}
-
-async function assignSupervisorToIntern(supervisorId) {
-    try {
-        const [supervisor, interns] = await Promise.all([
-            getSupervisorById(supervisorId),
-            getAllInterns()
-        ]);
-
-        if (!supervisor) {
-            showAlert('Supervisor record was not found.', 'warning');
-            return;
-        }
-        if (interns.length === 0) {
-            showAlert('Register interns before assigning supervisors.', 'warning');
-            return;
-        }
-
-        const values = await showCustomModal({
-            title: 'Assign Supervisor',
-            message: `${supervisor.firstName} ${supervisor.lastName}`,
-            confirmText: 'Assign',
-            fields: [
-                {
-                    label: 'Intern',
-                    name: 'internId',
-                    type: 'select',
-                    value: interns[0].id,
-                    options: interns.map(intern => ({
-                        value: intern.id,
-                        label: `${intern.firstName} ${intern.lastName} - ${intern.department}`
-                    }))
-                }
-            ]
-        });
-
-        if (!values) return;
-
-        const intern = await getInternById(Number(values.internId));
-        if (!intern) {
-            showAlert('Intern record was not found.', 'warning');
-            return;
-        }
-
-        await updateIntern({
-            ...intern,
-            supervisorId: supervisor.id,
-            supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
-            updatedAt: new Date().toISOString()
-        });
-
-        showAlert('Supervisor assigned to intern successfully.', 'success');
-        await loadSupervisorsPage();
-        await loadGroupTools();
-    } catch (error) {
-        showAlert('Error assigning supervisor: ' + error, 'error');
-    }
-}
-
-async function removeSupervisor(supervisorId) {
-    try {
-        const supervisor = await getSupervisorById(supervisorId);
-        if (!supervisor) {
-            showAlert('Supervisor record was not found.', 'warning');
-            return;
-        }
-
-        const confirmed = await showCustomConfirm(
-            `Delete ${supervisor.firstName} ${supervisor.lastName}? Their interns will be unassigned.`,
-            {
-                title: 'Delete Supervisor',
-                confirmText: 'Delete',
-                danger: true
-            }
-        );
-
-        if (!confirmed) return;
-
-        const [interns, groups] = await Promise.all([
-            getAllInterns(),
-            getAllGroups()
-        ]);
-
-        await Promise.all(interns
-            .filter(intern => intern.supervisorId === supervisorId)
-            .map(intern => updateIntern({
-                ...intern,
-                supervisorId: null,
-                supervisorName: '',
-                updatedAt: new Date().toISOString()
-            })));
-
-        await Promise.all(groups
-            .filter(group => group.supervisorId === supervisorId)
-            .map(group => updateGroup({
-                ...group,
-                supervisorId: '',
-                updatedAt: new Date().toISOString()
-            })));
-
-        await deleteSupervisor(supervisorId);
-        showAlert('Supervisor deleted successfully.', 'success');
-        await loadSupervisorsPage();
-        await loadGroupTools();
-    } catch (error) {
-        showAlert('Error deleting supervisor: ' + error, 'error');
-    }
-}
-
-function showSupervisorTab(tabName) {
-    document.querySelectorAll('[data-supervisor-panel]').forEach(panel => {
-        panel.hidden = panel.dataset.supervisorPanel !== tabName;
-    });
-    document.querySelectorAll('[data-supervisor-tab]').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.supervisorTab === tabName);
-    });
-
-    if (tabName === 'groups') {
-        loadGroupTools();
-    }
-}
-
-async function loadGroupTools() {
-    const supervisorSelect = document.getElementById('groupSupervisor');
-    const internList = document.querySelector('[data-group-intern-list]');
-    const groupsContainer = document.querySelector('[data-group-list]');
-    if (!supervisorSelect || !internList || !groupsContainer) return;
-
-    try {
-        const [supervisors, interns, groups] = await Promise.all([
-            getAllSupervisors(),
-            getAllInterns(),
-            getAllGroups()
-        ]);
-
-        supervisorSelect.innerHTML = `
-            <option value="">No supervisor</option>
-            ${supervisors.map(supervisor => (
-                `<option value="${supervisor.id}">${escapeHTML(supervisor.firstName)} ${escapeHTML(supervisor.lastName)}</option>`
-            )).join('')}
-        `;
-
-        internList.innerHTML = interns.length === 0
-            ? '<p class="text-muted">No interns available yet.</p>'
-            : interns.map(intern => `
-                <label class="group-intern-option">
-                    <input type="checkbox" value="${intern.id}">
-                    <span>
-                        <strong>${escapeHTML(intern.firstName)} ${escapeHTML(intern.lastName)}</strong>
-                        <small>${escapeHTML(intern.department)}${intern.supervisorName ? ` - ${escapeHTML(intern.supervisorName)}` : ''}</small>
-                    </span>
-                </label>
-            `).join('');
-
-        const supervisorMap = supervisors.reduce((map, supervisor) => {
-            map[supervisor.id] = `${supervisor.firstName} ${supervisor.lastName}`;
-            return map;
-        }, {});
-        const internMap = interns.reduce((map, intern) => {
-            map[intern.id] = `${intern.firstName} ${intern.lastName}`;
-            return map;
-        }, {});
-
-        groupsContainer.innerHTML = groups.length === 0
-            ? `
-                <div class="dashboard-empty-state compact">
-                    <i class="fas fa-layer-group"></i>
-                    <h3>No groups yet</h3>
-                    <p>Create a group to organize interns.</p>
-                </div>
-            `
-            : groups.map(group => {
-                const groupInternIds = group.internIds || [];
-                return `
-                <div class="group-card">
-                    <div>
-                        <h4>${escapeHTML(group.name)}</h4>
-                        <p>${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
-                    </div>
-                    <span class="role-badge user">${groupInternIds.length} intern${groupInternIds.length === 1 ? '' : 's'}</span>
-                    <div class="group-members">
-                        ${groupInternIds.map(internId => `<span>${escapeHTML(internMap[internId] || 'Unknown intern')}</span>`).join('')}
-                    </div>
-                </div>
-            `;
-            }).join('');
-    } catch (error) {
-        showAlert('Error loading group tools: ' + error, 'error');
-    }
-}
-
-async function handleCreateGroupSubmit(event) {
-    event.preventDefault();
-
-    const name = document.getElementById('groupName')?.value.trim();
-    const supervisorId = Number(document.getElementById('groupSupervisor')?.value) || '';
-    const internIds = Array.from(document.querySelectorAll('[data-group-intern-list] input:checked'))
-        .map(input => Number(input.value));
-
-    if (!name) {
-        showAlert('Group name is required.', 'warning');
-        return;
-    }
-    if (internIds.length === 0) {
-        showAlert('Select at least one intern for the group.', 'warning');
-        return;
-    }
-
-    try {
-        const supervisors = await getAllSupervisors();
-        const supervisor = supervisors.find(item => item.id === supervisorId);
-
-        await addGroup({
-            id: Date.now(),
-            name,
-            supervisorId,
-            internIds,
-            dateAdded: new Date().toISOString()
-        });
-
-        if (supervisor) {
-            await Promise.all(internIds.map(async (internId) => {
-                const intern = await getInternById(internId);
-                if (!intern) return;
-                await updateIntern({
-                    ...intern,
-                    supervisorId: supervisor.id,
-                    supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
-                    groupName: name,
-                    updatedAt: new Date().toISOString()
-                });
-            }));
-        }
-
-        event.target.reset();
-        showAlert('Group created successfully.', 'success');
-        await loadSupervisorsPage();
-        await loadGroupTools();
-    } catch (error) {
-        showAlert('Error creating group: ' + error, 'error');
     }
 }
 
@@ -2303,7 +1619,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (supervisorTable) {
             // Load supervisor summary cards and the full registered supervisor list
             loadSupervisorsPage();
-            loadGroupTools();
         }
 
         // Check if this is the performance page by looking for its table container
