@@ -958,7 +958,7 @@ header {
     align-items: center;
     gap: 8px;
     padding: 6px 16px;
-    background-color: var(--primary-color);
+    background-color: #2563eb; /* blue background */
     color: white;
     border: none;
     border-radius: 8px;
