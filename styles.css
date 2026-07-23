@@ -703,7 +703,8 @@ header {
 .user-link,
 .attendance-link,
 .performance-link,
-.settings-link{
+.settings-link,
+.logout-link{
     display: flex;
     font-size: 16px;
     align-items: center;
@@ -722,6 +723,22 @@ header {
     color: #94a3b8;
 }
 
+.logout-link{
+    color: #94a3b8;
+    background-color: var(--bg-dark-navy);
+}
+.logout-link i{
+    margin-right: 5px;
+    color: #4632b8;
+}
+.logout-link:hover{
+    background-color: #1e293b;
+    cursor: pointer;
+}
+.logout{
+    margin-top: 250px;
+}
+
 .user-link:hover{
     background-color: #1e293b;
     cursor: pointer;
@@ -730,7 +747,8 @@ header {
 .user-link a,
 .attendance-link a,
 .performance-link a,
-.settings-link a {
+.settings-link a,
+.logout-link a {
     color: inherit;
     text-decoration: none;
 }
