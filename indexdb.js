@@ -2116,6 +2116,7 @@ async function loadPerformancePage() {
 
             return `
                 <tr>
+<td><input type="checkbox" data-performance-select value=${intern.id}"></td>
                     <td>
                         <div class="dashboard-user-cell">
                             <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
@@ -2139,7 +2140,8 @@ async function loadPerformancePage() {
             <table class="table table-hover dashboard-user-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Intern</th>
+                      <th><input type="checkbox" id="selectAllperformance"></th> 
+                    <th>Intern</th>
                         <th>Department</th>
                         <th>Score</th>
                         <th>Rating</th>
