@@ -1,16 +1,16 @@
 
-/* Resets box sizing so layout widths include padding and borders. */
+/* box sizing so layout widths include padding */
 * {
     box-sizing: border-box;
 }
 
-/* Locks the document height so the login page does not create page overflow. */
+/* document height so the login page */
 html {
     height: 100%;
     overflow: hidden;
 }
 
-/* Defines reusable colors and shadows for the login design. */
+/* colors and shadows for the login design */
 :root {
     --ink: #071433;
     --muted: #4b5875;
@@ -24,7 +24,7 @@ html {
     --shadow: 0 22px 55px rgba(18, 37, 87, 0.13);
 }
 
-/* Removes browser spacing and applies the app font. */
+/* app font */
 body {
     margin: 0;
     height: 100%;
@@ -35,7 +35,7 @@ body {
     background: var(--soft);
 }
 
-/* Creates the two-column full-screen login shell. */
+/* two-column full-screen login shell */
 .login-shell {
     height: 100vh;
     overflow: hidden;
@@ -43,7 +43,7 @@ body {
     grid-template-columns: minmax(0, 0.95fr) minmax(560px, 1fr);
 }
 
-/* Styles the left brand and dashboard preview side. */
+/* left brand and dashboard preview side */
 .login-showcase {
     position: relative;
     overflow: hidden;
@@ -52,7 +52,7 @@ body {
     background: radial-gradient(circle at 70% 85%, #dfe8ff 0 18%, transparent 45%), linear-gradient(145deg, #ffffff 0%, #f3f6ff 100%);
 }
 
-/* Adds a subtle dotted dashboard texture to the left panel. */
+/* dotted dashboard texture to the left panel */
 .login-showcase::after {
     content: "";
     position: absolute;
@@ -64,7 +64,7 @@ body {
     background-size: 18px 18px;
 }
 
-/* Controls the inner width of the showcase content. */
+/* inner width of the showcase content */
 .showcase-content {
     position: relative;
     z-index: 1;
@@ -73,7 +73,7 @@ body {
     padding: 36px 0;
 }
 
-/* Aligns the logo icon with the brand text. */
+/* logo icon with the brand text */
 .brand-lockup {
     display: flex;
     align-items: center;
@@ -81,7 +81,7 @@ body {
     margin-bottom: 42px;
 }
 
-/* Creates the blue icon mark. */
+/* blue icon mark */
 .brand-mark {
     width: 64px;
     height: 64px;
@@ -95,7 +95,7 @@ body {
     box-shadow: 0 16px 30px rgba(79, 99, 255, 0.25);
 }
 
-/* Styles the InternFlow wordmark. */
+/* InternFlow wordmark */
 .brand-lockup h1 {
     margin: 0;
     font-size: 2rem;
@@ -104,24 +104,24 @@ body {
     letter-spacing: 0;
 }
 
-/* Colors the Flow part of the wordmark. */
+/* Flow part of the wordmark */
 .brand-lockup h1 span {
     color: var(--blue);
 }
 
-/* Styles the product subtitle. */
+/* product subtitle */
 .brand-lockup p {
     margin: 8px 0 0;
     color: var(--muted);
     font-size: 1rem;
 }
 
-/* Keeps the welcome copy narrow and readable. */
+/* welcome copy narrow and readable */
 .welcome-copy {
     max-width: 600px;
 }
 
-/* Styles the large welcome headline. */
+/* large welcome headline */
 .welcome-copy h2 {
     margin: 0 0 22px;
     font-size: clamp(2.5rem, 5vw, 4rem);
@@ -129,7 +129,7 @@ body {
     letter-spacing: 0;
 }
 
-/* Styles the welcome paragraph. */
+/* welcome paragraph */
 .welcome-copy p {
     max-width: 520px;
     margin: 0;
@@ -138,7 +138,7 @@ body {
     line-height: 1.55;
 }
 
-/* Lays out the metric preview cards. */
+/* metric preview cards */
 .preview-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(140px, 1fr));
@@ -146,7 +146,7 @@ body {
     margin: 62px 0 54px;
 }
 
-/* Styles each preview metric card. */
+/* preview metric card */
 .preview-stat {
     min-height: 110px;
     display: grid;
@@ -160,7 +160,7 @@ body {
     box-shadow: var(--shadow);
 }
 
-/* Styles the round metric icon. */
+/* round metric icon */
 .stat-icon {
     grid-row: span 2;
     width: 52px;
@@ -172,45 +172,45 @@ body {
     font-size: 1.15rem;
 }
 
-/* Sets blue metric icon colors. */
+/* metric icon colors */
 .stat-icon.blue {
     color: #4f63ff;
     background: #e9edff;
 }
 
-/* Sets green metric icon colors. */
+/* metric icon colors */
 .stat-icon.green {
     color: #20a67a;
     background: #e5f8ef;
 }
 
-/* Sets purple metric icon colors. */
+/* metric icon colors */
 .stat-icon.purple {
     color: #7c3aed;
     background: #f0e8ff;
 }
 
-/* Styles the large metric number. */
+/* large metric number */
 .preview-stat strong {
     align-self: end;
     font-size: 1.55rem;
     line-height: 1;
 }
 
-/* Styles the metric label. */
+/* metric label */
 .preview-stat small {
     align-self: start;
     color: var(--muted);
     font-size: 0.88rem;
 }
 
-/* Positions the dashboard illustration area. */
+/* dashboard illustration area */
 .workspace-preview {
     position: relative;
     min-height: 310px;
 }
 
-/* Styles the floating cards in the illustration. */
+/* floating cards in the illustration */
 .mini-card {
     position: absolute;
     z-index: 2;
@@ -221,7 +221,7 @@ body {
     box-shadow: var(--shadow);
 }
 
-/* Styles titles inside mini cards. */
+/* titles inside mini cards */
 .mini-card span {
     display: block;
     margin-bottom: 12px;
@@ -230,14 +230,14 @@ body {
     font-weight: 600;
 }
 
-/* Places the attendance mini card. */
+/* attendance mini card */
 .attendance-card {
     left: 0;
     top: 10px;
     width: 190px;
 }
 
-/* Draws a CSS donut chart. */
+/* CSS donut chart */
 .donut-chart {
     width: 64px;
     height: 64px;
@@ -247,7 +247,7 @@ body {
     background: conic-gradient(#47c08a 0 58%, #f3a640 58% 78%, #ee6b6e 78% 100%);
 }
 
-/* Creates the donut chart center. */
+/* donut chart center */
 .donut-chart::after {
     content: "";
     display: block;
@@ -258,14 +258,14 @@ body {
     background: #ffffff;
 }
 
-/* Resets the attendance legend list. */
+/* attendance legend list */
 .attendance-card ul {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-/* Styles attendance legend rows. */
+/* attendance legend rows */
 .attendance-card li {
     display: flex;
     align-items: center;
@@ -275,29 +275,29 @@ body {
     font-size: 0.72rem;
 }
 
-/* Defines the small legend dots. */
+/* small legend dots */
 .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
 }
 
-/* Sets the present legend color. */
+/* present legend color */
 .dot.present {
     background: #47c08a;
 }
 
-/* Sets the late legend color. */
+/* late legend color */
 .dot.late {
     background: #f3a640;
 }
 
-/* Sets the absent legend color. */
+/* absent legend color */
 .dot.absent {
     background: #ee6b6e;
 }
 
-/* Centers the monitor and desk illustration. */
+/* monitor and desk illustration */
 .desk-scene {
     position: absolute;
     left: 22%;
@@ -306,7 +306,7 @@ body {
     height: 310px;
 }
 
-/* Draws a simplified seated person shape. */
+/* seated person shape */
 .person {
     position: absolute;
     left: 20%;
@@ -318,7 +318,7 @@ body {
     transform: skewX(-6deg);
 }
 
-/* Draws the monitor frame. */
+/* monitor frame */
 .monitor {
     position: absolute;
     left: 40%;
@@ -331,13 +331,13 @@ body {
     box-shadow: 0 18px 28px rgba(8, 25, 64, 0.18);
 }
 
-/* Draws the monitor top navigation bar. */
+/* monitor top navigation bar */
 .monitor-bar {
     height: 28px;
     background: #eff3ff;
 }
 
-/* Draws a simple chart line on the monitor. */
+/* chart line on the monitor */
 .chart-line {
     width: 118px;
     height: 64px;
@@ -347,7 +347,7 @@ body {
     background: linear-gradient(135deg, transparent 44%, #5268ff 45% 50%, transparent 51%);
 }
 
-/* Draws small widgets on the monitor. */
+/* widgets on the monitor */
 .monitor-widgets {
     position: absolute;
     right: 24px;
@@ -358,7 +358,7 @@ body {
     background: conic-gradient(#5268ff 0 68%, #cdd8f8 68% 100%);
 }
 
-/* Draws the desk under the monitor. */
+/* desk under the monitor */
 .desk {
     position: absolute;
     left: 10%;
@@ -369,21 +369,21 @@ body {
     background: #63718e;
 }
 
-/* Places the new interns card. */
+/* new interns card */
 .interns-card {
     right: 36px;
     top: 24px;
     width: 190px;
 }
 
-/* Aligns the avatar row. */
+/* avatar row */
 .avatar-row {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-/* Styles avatar circles. */
+/* avatar circles */
 .avatar-row i,
 .avatar-row b {
     width: 34px;
@@ -397,20 +397,20 @@ body {
     font-style: normal;
 }
 
-/* Styles the plus avatar. */
+/* plus avatar */
 .avatar-row b {
     border: 2px solid #cbd5f3;
     background: #ffffff;
 }
 
-/* Places the upcoming end dates card. */
+/* upcoming end dates card */
 .dates-card {
     right: 0;
     bottom: 70px;
     width: 210px;
 }
 
-/* Styles the end-date number row. */
+/* end-date number row */
 .dates-card strong {
     display: flex;
     align-items: center;
@@ -418,12 +418,12 @@ body {
     font-size: 1.25rem;
 }
 
-/* Styles the calendar icon in the end-date card. */
+/* calendar icon in the end-date card */
 .dates-card i {
     color: var(--blue);
 }
 
-/* Styles the right dark login panel. */
+/* right dark login panel */
 .login-panel {
     position: relative;
     overflow: hidden;
@@ -435,7 +435,7 @@ body {
     background: radial-gradient(circle at 12% 0%, rgba(50, 72, 244, 0.18), transparent 30%), linear-gradient(145deg, #06142e 0%, #020b1d 100%);
 }
 
-/* Adds a subtle dotted texture to the login panel. */
+/* dotted texture to the login panel */
 .login-panel::before {
     content: "";
     position: absolute;
@@ -445,14 +445,14 @@ body {
     background-size: 24px 24px;
 }
 
-/* Draws the decorative blue circles. */
+/* decorative blue circles */
 .glow-circle {
     position: absolute;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(75, 99, 255, 0.6), rgba(75, 99, 255, 0.06) 68%);
 }
 
-/* Positions the top circle. */
+/* top circle */
 .glow-circle.top {
     top: -130px;
     right: -10px;
@@ -460,7 +460,7 @@ body {
     height: 270px;
 }
 
-/* Positions the middle circle. */
+/* middle circle */
 .glow-circle.middle {
     top: 0;
     right: -135px;
@@ -468,7 +468,7 @@ body {
     height: 330px;
 }
 
-/* Positions the bottom circle. */
+/* bottom circle */
 .glow-circle.bottom {
     right: -120px;
     bottom: -175px;
@@ -476,7 +476,7 @@ body {
     height: 350px;
 }
 
-/* Keeps the login content above decorative layers. */
+/* login content above decorative layers */
 .login-panel-content {
     position: relative;
     z-index: 1;
@@ -486,12 +486,12 @@ body {
     scrollbar-width: none;
 }
 
-/* Hides the internal scrollbar in WebKit browsers while keeping the panel usable. */
+/* internal scrollbar in WebKit browsers while keeping */
 .login-panel-content::-webkit-scrollbar {
     display: none;
 }
 
-/* Aligns the heading icon and text. */
+/* heading icon and text */
 .login-heading {
     display: flex;
     align-items: flex-start;
@@ -499,7 +499,7 @@ body {
     margin-bottom: 22px;
 }
 
-/* Styles the heading lock badge. */
+/* heading lock badge */
 .login-heading > span {
     width: 58px;
     height: 58px;
@@ -511,7 +511,7 @@ body {
     background: linear-gradient(135deg, #7084ff, #344af5);
 }
 
-/* Styles the login heading title. */
+/* login heading title */
 .login-heading h2 {
     margin: 4px 0 8px;
     font-size: clamp(1.8rem, 3vw, 2.45rem);
@@ -519,14 +519,14 @@ body {
     letter-spacing: 0;
 }
 
-/* Styles the login heading subtitle. */
+/* login heading subtitle */
 .login-heading p {
     margin: 0;
     color: rgba(255, 255, 255, 0.84);
     font-size: 1.1rem;
 }
 
-/* Draws the short blue underline. */
+/* short blue underline */
 .login-heading div > i {
     display: block;
     width: 64px;
@@ -536,7 +536,7 @@ body {
     background: #6376ff;
 }
 
-/* Styles the glass login card. */
+/* glass login card */
 .login-card {
     display: grid;
     gap: 16px;
@@ -548,19 +548,19 @@ body {
     backdrop-filter: blur(14px);
 }
 
-/* Stacks each label and input. */
+/* each label and input */
 .login-field {
     display: grid;
     gap: 12px;
 }
 
-/* Styles login field labels. */
+/* login field labels */
 .login-field > span {
     font-size: 1rem;
     font-weight: 700;
 }
 
-/* Creates the bordered input container. */
+/* bordered input container */
 .input-wrap {
     height: 52px;
     display: flex;
@@ -572,13 +572,13 @@ body {
     background: rgba(7, 20, 51, 0.42);
 }
 
-/* Styles leading icons inside inputs. */
+/* leading icons inside inputs */
 .input-wrap > i {
     color: rgba(222, 231, 255, 0.72);
     font-size: 1.25rem;
 }
 
-/* Styles text inputs. */
+/* text inputs */
 .input-wrap input {
     flex: 1;
     min-width: 0;
@@ -589,18 +589,18 @@ body {
     font: inherit;
 }
 
-/* Styles input placeholder text. */
+/* input placeholder text */
 .input-wrap input::placeholder {
     color: rgba(222, 231, 255, 0.56);
 }
 
-/* Highlights focused input wrappers in modern browsers. */
+/* focused input wrappers in modern browsers */
 .input-wrap:focus-within {
     border-color: #6376ff;
     box-shadow: 0 0 0 4px rgba(99, 118, 255, 0.14);
 }
 
-/* Removes default styling from the password toggle button. */
+/* password toggle button */
 .password-toggle {
     border: none;
     color: rgba(222, 231, 255, 0.78);
@@ -609,7 +609,7 @@ body {
     font-size: 1.25rem;
 }
 
-/* Places remember-me and forgot-password on one row. */
+/* remember-me and forgot-password on one row */
 .login-options {
     display: flex;
     align-items: center;
@@ -617,7 +617,7 @@ body {
     gap: 20px;
 }
 
-/* Aligns the checkbox with the remember-me label. */
+/* checkbox with the remember-me label */
 .login-options label {
     display: inline-flex;
     align-items: center;
@@ -626,14 +626,14 @@ body {
     font-weight: 600;
 }
 
-/* Styles the checkbox control. */
+/* checkbox control */
 .login-options input {
     width: 22px;
     height: 22px;
     accent-color: var(--blue);
 }
 
-/* Styles link-like action buttons. */
+/* link-like action buttons */
 .login-options button {
     border: none;
     color: #7284ff;
@@ -643,7 +643,7 @@ body {
     cursor: pointer;
 }
 
-/* Reserves space for login errors without shifting the page too much. */
+/* login errors without shifting the page too */
 .login-error {
     min-height: 20px;
     margin: -10px 0 -4px;
@@ -651,7 +651,7 @@ body {
     font-weight: 600;
 }
 
-/* Styles the main sign-in button. */
+/* main sign-in button */
 .signin-button {
     height: 56px;
     display: inline-flex;
@@ -668,12 +668,12 @@ body {
     box-shadow: 0 16px 34px rgba(53, 75, 246, 0.32);
 }
 
-/* Adds hover feedback to the sign-in button. */
+/* sign-in button */
 .signin-button:hover {
     filter: brightness(1.05);
 }
 
-/* Creates the OR divider. */
+/* OR divider */
 .login-divider {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -682,7 +682,7 @@ body {
     color: rgba(255, 255, 255, 0.68);
 }
 
-/* Draws divider lines. */
+/* divider lines */
 .login-divider::before,
 .login-divider::after {
     content: "";
@@ -690,7 +690,7 @@ body {
     background: rgba(174, 194, 232, 0.22);
 }
 
-/* Styles the Google button. */
+/* Google button */
 .google-button {
     height: 56px;
     display: inline-flex;
@@ -706,13 +706,13 @@ body {
     cursor: pointer;
 }
 
-/* Styles the Google letter mark. */
+/* Google letter mark */
 .google-button b {
     color: #4285f4;
     font-size: 1.65rem;
 }
 
-/* Aligns the sign-up prompt below the Google button. */
+/* sign-up prompt below the Google button */
 .signup-prompt {
     display: flex;
     align-items: center;
@@ -722,7 +722,7 @@ body {
     font-weight: 600;
 }
 
-/* Styles the sign-up prompt button as a text action. */
+/* sign-up prompt button as a text action */
 .signup-prompt button {
     border: none;
     color: #8190ff;
@@ -732,7 +732,7 @@ body {
     cursor: pointer;
 }
 
-/* Creates the sign-up panel when JavaScript reveals it. */
+/* sign-up panel when JavaScript reveals it */
 .signup-panel {
     display: grid;
     gap: 14px;
@@ -740,19 +740,19 @@ body {
     border-top: 1px solid rgba(174, 194, 232, 0.22);
 }
 
-/* Keeps the sign-up panel hidden until the sign-up button is clicked. */
+/* sign-up panel hidden until the sign-up button */
 .signup-panel[hidden] {
     display: none;
 }
 
-/* Styles the sign-up panel title. */
+/* sign-up panel title */
 .signup-panel h3 {
     margin: 0;
     font-size: 1.05rem;
     color: var(--white);
 }
 
-/* Styles the create-account button. */
+/* create-account button */
 .signup-button {
     height: 52px;
     display: inline-flex;
@@ -768,12 +768,12 @@ body {
     cursor: pointer;
 }
 
-/* Adds hover feedback to the create-account button. */
+/* create-account button */
 .signup-button:hover {
     background: rgba(255, 255, 255, 0.16);
 }
 
-/* Lays out the footer under the card. */
+/* footer under the card */
 .login-footer {
     display: flex;
     align-items: center;
@@ -783,31 +783,31 @@ body {
     color: rgba(255, 255, 255, 0.72);
 }
 
-/* Styles the secure login footer block. */
+/* secure login footer block */
 .login-footer div {
     display: flex;
     align-items: flex-start;
     gap: 12px;
 }
 
-/* Removes default footer paragraph margins. */
+/* footer paragraph margins */
 .login-footer p {
     margin: 0;
     line-height: 1.5;
 }
 
-/* Makes footer labels bright. */
+/* footer labels bright */
 .login-footer strong {
     color: var(--white);
 }
 
-/* Adds the vertical divider before copyright. */
+/* vertical divider before copyright */
 .login-footer > p {
     padding-left: 48px;
     border-left: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-/* Stacks the page on tablet and mobile screens. */
+/* page on tablet and mobile screens */
 @media (max-width: 1100px) {
     .login-shell {
         grid-template-columns: 1fr;
@@ -822,7 +822,7 @@ body {
     }
 }
 
-/* Adjusts compact mobile spacing. */
+/* compact mobile spacing */
 @media (max-width: 720px) {
     .login-panel,
     .showcase-content {
