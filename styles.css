@@ -986,6 +986,22 @@ header {
     transition: all 0.3s ease;
 }
 
+.btn-delete-user{
+     display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background-color: red; /* blue background */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+}
+
 .btn-add-user:hover {
     background-color: var(--primary-hover);
     transform: translateY(-2px);
@@ -1224,6 +1240,10 @@ header {
     background: #f8fafc;
 }
 
+.group-form{
+    height: 50%;
+
+}
 .group-section-title h3 {
     margin: 0 0 4px;
     color: var(--text-main);
