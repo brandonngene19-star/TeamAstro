@@ -1610,16 +1610,19 @@ async function loadSupervisorsPage() {
                 <td><span class="role-badge ${supervisor.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(supervisor.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
-                    <div class="table-actions">
-                        <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button class="btn btn-sm btn-assign" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                
+                <div class="table-actions">
+                     <button class="btn btn-sm btn-primary"type="button"title"update supervisor"onclick"editSupervisor(${supervisor.id})">
+                      <i class="fes fa-pen"></i>
+                    </button>
+                    <button class="btn btn-sm btn-assign"type="button"title="assign supervisor to intern" onclick="assignSupversorToIntern(${supervisor.id}">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                     <i class="fas fa-trash"></i>  - delete this too
+                    <button class="btn btn-sm btn-danger"type= "button"=deleteSupervisor(${supervisor.id}">
+                    <i class="fas fa-trash></i
+
+                       </button>
                     </div>
                 </td>
             </tr>
