@@ -258,8 +258,7 @@ function initDatabase() {
         };
     });
 }
-
-// Check whether a store already has a record with this email.
+//check whether a store already has a record with this email.
 // Both 'interns' and 'supervisors' have a UNIQUE index on 'email', so
 // store.add() throws a raw ConstraintError if you try to reuse one.
 // Checking first lets us show a friendly message instead of that error.
@@ -502,6 +501,39 @@ function updateGroup(group) {
 
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
+    });
+}
+function getGroupById(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('groups', 'readonly');
+        const store = transaction.objectStore('groups');
+        const request = store.get(id);
+
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+
+        request.onerror = () => {
+            reject(request.error);
+        };
+    });
+}
+
+function deleteGroup(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('groups', 'readwrite');
+        const store = transaction.objectStore('groups');
+        const request = store.delete(id);
+
+        request.onsuccess = () => {
+            console.log('group :', id);
+            resolve();
+        };
+
+        request.onerror = () => {
+            console.error('Error deleting intern:', request.error);
+            reject(request.error);
+        };
     });
 }
 
@@ -1421,8 +1453,6 @@ async function loadDashboardUsers() {
                 <td>${escapeHTML(intern.phone)}</td>
                 <td>${escapeHTML(intern.gender)}</td>
                 <td>${escapeHTML(intern.supervisorName || 'Unassigned')}</td>
-                <td>${escapeHTML(intern.groupName || '-')}</td>
-                <td><span class="role-badge ${intern.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(intern.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
@@ -1450,8 +1480,6 @@ async function loadDashboardUsers() {
                         <th>Phone</th>
                         <th>Gender</th>
                         <th>Supervisor</th>
-                        <th>Group</th>
-                        <th>Role</th>
                         <th>Date Added</th>
                         <th>Action</th>
                     </tr>
@@ -1699,7 +1727,6 @@ async function loadSupervisorsPage() {
                 <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
-                <td><span class="role-badge ${supervisor.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(supervisor.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
@@ -1711,12 +1738,7 @@ async function loadSupervisorsPage() {
                         </button>
                         <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
                             <i class="fas fa-trash"></i>
-                        <button class="btn btn-sm btn-danger" type="button" onclick="deleteSupervisor(${supervisor.id})" title="delete Supervisoar">
-                        <i class="fes fa-trash"></i>
-                       </button>
-
                         
-                        </button>
                     </div>
                 </td>
             </tr>
@@ -1730,7 +1752,6 @@ async function loadSupervisorsPage() {
                         <th>Department</th>
                         <th>Phone</th>
                         <th>Interns</th>
-                        <th>Role</th>
                         <th>Date Added</th>
                         <th>Action</th>
                     </tr>
@@ -1938,7 +1959,53 @@ function showSupervisorTab(tabName) {
         loadGroupTools();
     }
 }
+async function removeGroup(groupId) {
+    try {
+        const supervisor = await getSupervisorById(groupId);
 
+        const confirmed = await showCustomConfirm(
+            'Delete ${group}',
+             {
+                title: 'Delete group',
+                confirmText: 'Delete',
+                danger: true
+            }
+           
+        );
+
+        if (!confirmed) return;
+
+        const [interns, supervisors] = await Promise.all([
+            getAllInterns(),
+            getAllSupervisors()
+            
+        ]);
+
+        await Promise.all(interns
+            .filter(intern => intern.supervisorId === supervisorId)
+            .map(intern => updateIntern({
+                ...intern,
+                supervisorId: null,
+                supervisorName: '',
+                updatedAt: new Date().toISOString()
+            })));
+
+        await Promise.all(supervisors
+            .filter(supervisor => supervisor.groupId === groupId)
+            .map(supervisor => updateSupervisor({
+                ...supervisor,
+                group: '',
+                updatedAt: new Date().toISOString()
+            })));
+
+        await deleteGroup(group);
+        showAlert('group deleted successfully.', 'success');
+        await loadSupervisorsPage();
+        await loadGroupTools();
+    } catch (error) {
+        showAlert('Error deleting: ' + error, 'error');
+    }
+}
 async function loadGroupTools() {
     const supervisorSelect = document.getElementById('groupSupervisor');
     const internList = document.querySelector('[data-group-intern-list]');
@@ -2214,7 +2281,7 @@ async function editPerformance(internId) {
             department: intern?.department || performanceRecord.department,
             score,
             rating: values.rating,
-            remarks: values.remarks || '',
+            remarks: (values.remarks) || '',
             updatedAt: new Date().toISOString()
         };
 
