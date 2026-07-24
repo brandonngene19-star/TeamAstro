@@ -1035,6 +1035,7 @@ header {
 .stat-info h4{
     margin:0;
     color:#555;
+    
 }
 
 .stat-info h2{
@@ -1140,6 +1141,7 @@ header {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: #f8fafc;
+    button delete:
 }
 
 .supervisor-tab {
@@ -1351,7 +1353,7 @@ header {
 .settings-form,
 .settings-actions {
     display: grid;
-    gap: 14px;
+    gap: 14px; 
 }
 
 .settings-form label {
@@ -1546,3 +1548,15 @@ header {
     /* Change background on hover */
     background-color: var(--primary-hover);
 }
+.delete-btn {
+  background-color: blue;  
+  color: white;            
+  border: none;            
+  padding: 10px 20px;       
+  border-radius: 5px;       
+  cursor: pointer;          
+}
+
+
+
+
