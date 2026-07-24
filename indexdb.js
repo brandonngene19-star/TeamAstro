@@ -1,8 +1,4 @@
 
-// ============================================================================
-// Global Variables for IndexedDB
-// ============================================================================
-
 // Database reference - will be set when database opens
 let db;
 
@@ -10,7 +6,7 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 // ============================================================================
 // Custom Alert System - Creates beautiful, attractive notifications
@@ -179,14 +175,35 @@ function initDatabase() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
+        // Fires if the DB can't be opened at all (e.g. storage disabled).
         request.onerror = () => {
             console.error('Database failed to open');
             reject(request.error);
         };
 
+        // Fires if an older connection (usually in another open tab) is
+        // still holding the database and blocking this upgrade. Without
+        // this handler, neither onsuccess nor onerror ever fires and `db`
+        // stays undefined forever, causing "Cannot read properties of
+        // undefined (reading 'transaction')" the moment any db function runs.
+        request.onblocked = () => {
+            console.warn('Database upgrade blocked by another open tab/connection.');
+            showAlert('Please close other tabs of this app, then reload this page.', 'warning', 6000);
+            reject(new Error('Database upgrade blocked by another open connection.'));
+        };
+
         request.onsuccess = () => {
             db = request.result;
             console.log('Database opened successfully');
+
+            // If another tab later needs to upgrade the schema, this
+            // connection must close itself so that tab isn't blocked in turn.
+            db.onversionchange = () => {
+                db.close();
+                console.warn('Database is outdated; another tab needs an upgrade. Please reload this page.');
+                showAlert('This page is out of date. Please reload.', 'warning', 6000);
+            };
+
             resolve(db);
         };
 
@@ -242,6 +259,22 @@ function initDatabase() {
     });
 }
 
+// Check whether a store already has a record with this email.
+// Both 'interns' and 'supervisors' have a UNIQUE index on 'email', so
+// store.add() throws a raw ConstraintError if you try to reuse one.
+// Checking first lets us show a friendly message instead of that error.
+function emailExistsInStore(storeName, email) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const index = store.index('email');
+        const request = index.get(email);
+
+        request.onsuccess = () => resolve(Boolean(request.result));
+        request.onerror = () => reject(request.error);
+    });
+}
+
 // Add Intern
 function addIntern(intern) {
     return new Promise((resolve, reject) => {
@@ -256,7 +289,11 @@ function addIntern(intern) {
 
         request.onerror = () => {
             console.error('Error adding intern:', request.error);
-            reject(request.error);
+            if (request.error?.name === 'ConstraintError') {
+                reject(new Error('An intern with this email is already registered.'));
+            } else {
+                reject(request.error);
+            }
         };
     });
 }
@@ -311,7 +348,11 @@ function updateIntern(intern) {
 
         request.onerror = () => {
             console.error('Error updating intern:', request.error);
-            reject(request.error);
+            if (request.error?.name === 'ConstraintError') {
+                reject(new Error('Another intern is already using that email.'));
+            } else {
+                reject(request.error);
+            }
         };
     });
 }
@@ -330,7 +371,11 @@ function addSupervisor(supervisor) {
 
         request.onerror = () => {
             console.error('Error adding supervisor:', request.error);
-            reject(request.error);
+            if (request.error?.name === 'ConstraintError') {
+                reject(new Error('A supervisor with this email is already registered.'));
+            } else {
+                reject(request.error);
+            }
         };
     });
 }
@@ -385,7 +430,11 @@ function updateSupervisor(supervisor) {
 
         request.onerror = () => {
             console.error('Error updating supervisor:', request.error);
-            reject(request.error);
+            if (request.error?.name === 'ConstraintError') {
+                reject(new Error('Another supervisor is already using that email.'));
+            } else {
+                reject(request.error);
+            }
         };
     });
 }
@@ -829,47 +878,58 @@ function handleFormSubmit(event, formType) {
             return;
         }
 
-        // Create intern object with all required fields including auto-generated ID
-        const intern = {
-            // Unique ID generated using current timestamp in milliseconds
-            id: Date.now(),
-            // Store first name as entered by user
-            firstName: firstName,
-            // Store last name as entered by user
-            lastName: lastName,
-            // Store email as entered by user
-            email: email,
-            // Store phone number as entered by user
-            phone: phone,
-            // Store school as entered by user
-            school: school,
-            // Store selected department
-            department: department,
-            // Store selected gender
-            gender: gender,
-            // Create an Intern ID in format: INT-YYYY-XXX (e.g., INT-2025-001)
-            internId: generateInternID(),
-            // Store the current date and time when intern was registered
-            dateAdded: new Date().toISOString()
-        };
-
-        // Add intern to database and create corresponding attendance record
-        addIntern(intern).then((internData) => {
-            // Call function to automatically create attendance record for new intern
-            createAttendanceRecordForNewIntern(intern);
-            // Show success message with beautiful alert
-            showAlert('Intern registered successfully.', 'success');
-            // Clear all form fields after successful registration
-            event.target.reset();
-            // Close the dashboard registration modal when this form is inside one.
-            if (document.getElementById('addUserModal')) {
-                closeAddUserModal();
+        // Check for a duplicate email before writing anything, so the
+        // person gets a clear warning instead of a raw database error.
+        emailExistsInStore('interns', email).then((exists) => {
+            if (exists) {
+                showAlert('An intern with this email is already registered.', 'warning');
+                return;
             }
-            // Refresh the dashboard user list so the new intern appears immediately.
-            loadDashboardUsers();
+
+            // Create intern object with all required fields including auto-generated ID
+            const intern = {
+                // Unique ID generated using current timestamp in milliseconds
+                id: Date.now(),
+                // Store first name as entered by user
+                firstName: firstName,
+                // Store last name as entered by user
+                lastName: lastName,
+                // Store email as entered by user
+                email: email,
+                // Store phone number as entered by user
+                phone: phone,
+                // Store school as entered by user
+                school: school,
+                // Store selected department
+                department: department,
+                // Store selected gender
+                gender: gender,
+                // Create an Intern ID in format: INT-YYYY-XXX (e.g., INT-2025-001)
+                internId: generateInternID(),
+                // Store the current date and time when intern was registered
+                dateAdded: new Date().toISOString()
+            };
+
+            // Add intern to database and create corresponding attendance record
+            addIntern(intern).then((internData) => {
+                // Call function to automatically create attendance record for new intern
+                createAttendanceRecordForNewIntern(intern);
+                // Show success message with beautiful alert
+                showAlert('Intern registered successfully.', 'success');
+                // Clear all form fields after successful registration
+                event.target.reset();
+                // Close the dashboard registration modal when this form is inside one.
+                if (document.getElementById('addUserModal')) {
+                    closeAddUserModal();
+                }
+                // Refresh the dashboard user list so the new intern appears immediately.
+                loadDashboardUsers();
+            }).catch(error => {
+                // Show error message if registration fails
+                showAlert('Error registering intern: ' + (error?.message || error), 'error');
+            });
         }).catch(error => {
-            // Show error message if registration fails
-            showAlert('Error registering intern: ' + error, 'error');
+            showAlert('Error checking existing records: ' + (error?.message || error), 'error');
         });
     } else if (formType === 'supervisor') {
         // Get supervisor form field values from the dedicated supervisors page.
@@ -903,30 +963,62 @@ function handleFormSubmit(event, formType) {
             return;
         }
 
-        // Store supervisors separately so intern attendance records remain intern-only.
-        const supervisor = {
-            id: Date.now(),
-            firstName,
-            lastName,
-            email,
-            phone,
-            department,
-            dateAdded: new Date().toISOString()
-        };
-
-        addSupervisor(supervisor).then(() => {
-            showAlert('Supervisor registered successfully.', 'success');
-            event.target.reset();
-            if (document.getElementById('supervisorModal')) {
-                closeSupervisorModal();
+        // Check for a duplicate email before writing anything, so the
+        // person gets a clear warning instead of a raw database error.
+        emailExistsInStore('supervisors', email).then((exists) => {
+            if (exists) {
+                showAlert('A supervisor with this email is already registered.', 'warning');
+                return;
             }
-            loadSupervisorsPage();
+
+            // Store supervisors separately so intern attendance records remain intern-only.
+            const supervisor = {
+                id: Date.now(),
+                firstName,
+                lastName,
+                email,
+                phone,
+                department,
+                dateAdded: new Date().toISOString()
+            };
+
+            addSupervisor(supervisor).then(() => {
+                showAlert('Supervisor registered successfully.', 'success');
+                event.target.reset();
+                if (document.getElementById('supervisorModal')) {
+                    closeSupervisorModal();
+                }
+                loadSupervisorsPage();
+            }).catch(error => {
+                showAlert('Error registering supervisor: ' + (error?.message || error), 'error');
+            });
         }).catch(error => {
-            showAlert('Error registering supervisor: ' + error, 'error');
+            showAlert('Error checking existing records: ' + (error?.message || error), 'error');
         });
     }
 }
 
+
+// Parse a "HH:MM AM/PM" string into minutes-since-midnight, or null if it
+// doesn't match that format. Used to validate and compare attendance times.
+function parseTimeToMinutes(timeStr) {
+    const match = /^(\d{1,2}):([0-5]\d)\s?(AM|PM)$/i.exec(String(timeStr).trim());
+    if (!match) return null;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const meridiem = match[3].toUpperCase();
+
+    if (hours < 1 || hours > 12) return null;
+
+    if (meridiem === 'AM') {
+        if (hours === 12) hours = 0;
+    } else if (hours !== 12) {
+        hours += 12;
+    }
+
+    return hours * 60 + minutes;
+}
 
 // Generate unique Intern ID in format INT-YYYY-XXX
 function generateInternID() {
@@ -1619,6 +1711,11 @@ async function loadSupervisorsPage() {
                         </button>
                         <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
                             <i class="fas fa-trash"></i>
+                        <button class="btn btn-sm btn-danger" type="button" onclick="deleteSupervisor(${supervisor.id})" title="delete Supervisoar">
+                        <i class="fes fa-trash"></i>
+                       </button>
+
+                        
                         </button>
                     </div>
                 </td>
@@ -2220,7 +2317,7 @@ async function editAttendance(internId) {
                     value: attendanceRecord.checkInTime || '',
                     placeholder: 'HH:MM AM/PM',
                     disabled: isCheckInLocked,
-                    helpText: isCheckInLocked ? 'Check-in time is locked after the first save.' : ''
+                    helpText: isCheckInLocked ? 'Check-in time is locked after the first save.' : 'Format: HH:MM AM/PM, e.g. 08:30 AM'
                 },
                 {
                     label: 'Check Out',
@@ -2228,7 +2325,7 @@ async function editAttendance(internId) {
                     value: attendanceRecord.checkOutTime || '',
                     placeholder: 'HH:MM AM/PM',
                     disabled: isCheckOutLocked,
-                    helpText: isCheckOutLocked ? 'Check-out time is locked after the first save.' : ''
+                    helpText: isCheckOutLocked ? 'Check-out time is locked after the first save.' : 'Format: HH:MM AM/PM, must be after check-in'
                 },
                 {
                     label: 'Status',
@@ -2250,13 +2347,35 @@ async function editAttendance(internId) {
 
         if (!attendanceValues) return;
 
+        // Only fields the person could actually edit need validating —
+        // locked fields keep whatever was already saved.
+        const rawCheckIn = isCheckInLocked ? attendanceRecord.checkInTime : (attendanceValues.checkIn.trim() || null);
+        const rawCheckOut = isCheckOutLocked ? attendanceRecord.checkOutTime : (attendanceValues.checkOut.trim() || null);
+
+        if (!isCheckInLocked && rawCheckIn && parseTimeToMinutes(rawCheckIn) === null) {
+            showAlert('Check-in time must be in HH:MM AM/PM format, e.g. 08:30 AM.', 'error');
+            return;
+        }
+        if (!isCheckOutLocked && rawCheckOut && parseTimeToMinutes(rawCheckOut) === null) {
+            showAlert('Check-out time must be in HH:MM AM/PM format, e.g. 05:00 PM.', 'error');
+            return;
+        }
+
+        if (rawCheckIn && rawCheckOut) {
+            const checkInMinutes = parseTimeToMinutes(rawCheckIn);
+            const checkOutMinutes = parseTimeToMinutes(rawCheckOut);
+            if (checkInMinutes !== null && checkOutMinutes !== null && checkOutMinutes <= checkInMinutes) {
+                showAlert('Check-out time must be later than check-in time.', 'error');
+                return;
+            }
+        }
+
         // Update the existing attendance record while preserving its IndexedDB key
         await updateAttendance({
             ...attendanceRecord,
             internId: internId,
-            // Preserve saved times when their fields are locked in the modal.
-            checkInTime: isCheckInLocked ? attendanceRecord.checkInTime : attendanceValues.checkIn.trim() || null,
-            checkOutTime: isCheckOutLocked ? attendanceRecord.checkOutTime : attendanceValues.checkOut.trim() || null,
+            checkInTime: rawCheckIn,
+            checkOutTime: rawCheckOut,
             // Preserve the stored status when the field is locked in the modal.
             status: isStatusLocked ? attendanceRecord.status : attendanceValues.status,
             remarks: attendanceValues.remarks || '',
@@ -2322,5 +2441,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(error => {
         // Log error if database initialization fails
         console.error('Failed to initialize database:', error);
+        // Surface it to the user too -- previously this failed silently,
+        // and the first sign of trouble was a "reading transaction of
+        // undefined" error on whatever button was clicked next.
+        showAlert('Could not open the local database: ' + (error?.message || error), 'error', 6000);
     });
 });
