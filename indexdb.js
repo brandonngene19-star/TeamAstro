@@ -1504,7 +1504,7 @@ async function editIntern(internId) {
                     name: 'department',
                     type: 'select',
                     value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance', ]
                 },
                 {
                     label: 'Gender',
@@ -1771,13 +1771,7 @@ async function editSupervisor(supervisorId) {
                     value: supervisor.department || 'Software Engineering',
                     options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: supervisor.role || 'User',
-                    options: ['User', 'Admin']
-                }
+                
             ]
         });
 
