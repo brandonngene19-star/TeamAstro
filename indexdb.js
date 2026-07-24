@@ -267,7 +267,7 @@ function addIntern(intern) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('interns', 'readwrite');
         const store = transaction.objectStore('interns');
-        const request = store.add(intern);
+        const request = store.add(intern);      
 
         request.onsuccess = () => {
             console.log('Intern added:', intern);
@@ -1513,13 +1513,6 @@ async function editIntern(internId) {
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: intern.role || 'User',
-                    options: ['User', 'Admin']
-                }
             ]
         });
 
@@ -1709,27 +1702,13 @@ async function loadSupervisorsPage() {
                             <small class="text-muted">${escapeHTML(supervisor.email)}</small>
                         </div>
                     </div>
-                </td>
+                </td>   
                 <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
-<<<<<<< HEAD
                 
-                <div class="table-actions">
-                     <button class="btn btn-sm btn-primary"type="button"title"update supervisor"onclick"editSupervisor(${supervisor.id})">
-                      <i class="fes fa-pen"></i>
-                    </button>
-                    <button class="btn btn-sm btn-assign"type="button"title="assign supervisor to intern" onclick="assignSupversorToIntern(${supervisor.id}">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                     <i class="fas fa-trash"></i>  - delete this too
-                    <button class="btn btn-sm btn-danger"type= "button"=deleteSupervisor(${supervisor.id}">
-                    <i class="fas fa-trash></i
-
-                       </button>
-=======
                     <div class="table-actions">
                         <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
@@ -1740,7 +1719,6 @@ async function loadSupervisorsPage() {
                         <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
                             <i class="fas fa-trash"></i>
                         
->>>>>>> 6e3577f34d37e0892e262722123af992e15fdeb4
                     </div>
                 </td>
             </tr>
