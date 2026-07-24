@@ -151,6 +151,14 @@
                 </button>
                 <button class="supervisor-tab" type="button" data-supervisor-tab="groups" onclick="showSupervisorTab('groups')">
                     <i class="fas fa-layer-group"></i>
+<<<<<<< HEAD
+=======
+                    <span>Create Group</span>
+                </button>
+
+                
+            </div>
+>>>>>>> 6e3577f34d37e0892e262722123af992e15fdeb4
 
                     <span>Create Group</span> <title>Delete Button with Event Listener</title
                     </button>
@@ -187,12 +195,17 @@
                             <i class="fas fa-plus"></i>
                             <span>Create Group</span>
                         </button>
+                        <button class="btn btn-delete-user" type="submit" onclick='removeGroup(groupId)'>
+                            <i class="fas fa-minus"></i>
+                            <span>Delete</span>
+                        </button>
                     </form>
 
                     <div class="group-list-panel">
                         <div class="group-section-title">
                             <h3>Groups</h3>
                             <p>Saved intern groups appear here.</p>
+                            
                         </div>
                         <div data-group-list>
                             <p class="text-muted">Loading groups...</p>

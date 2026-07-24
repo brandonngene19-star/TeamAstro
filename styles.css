@@ -552,6 +552,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    
 }
 
 header {
@@ -702,7 +703,8 @@ header {
 .user-link,
 .attendance-link,
 .performance-link,
-.settings-link{
+.settings-link,
+.logout-link{
     display: flex;
     font-size: 16px;
     align-items: center;
@@ -721,6 +723,22 @@ header {
     color: #94a3b8;
 }
 
+.logout-link{
+    color: #94a3b8;
+    background-color: var(--bg-dark-navy);
+}
+.logout-link i{
+    margin-right: 5px;
+    color: #4632b8;
+}
+.logout-link:hover{
+    background-color: #1e293b;
+    cursor: pointer;
+}
+.logout{
+    margin-top: 250px;
+}
+
 .user-link:hover{
     background-color: #1e293b;
     cursor: pointer;
@@ -729,7 +747,8 @@ header {
 .user-link a,
 .attendance-link a,
 .performance-link a,
-.settings-link a {
+.settings-link a,
+.logout-link a {
     color: inherit;
     text-decoration: none;
 }
@@ -965,6 +984,22 @@ header {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+.btn-delete-user{
+     display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background-color: red; /* blue background */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
 }
 
 .btn-add-user:hover {
@@ -1207,6 +1242,10 @@ header {
     background: #f8fafc;
 }
 
+.group-form{
+    height: 50%;
+
+}
 .group-section-title h3 {
     margin: 0 0 4px;
     color: var(--text-main);
