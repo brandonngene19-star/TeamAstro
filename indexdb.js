@@ -6,11 +6,9 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 4;
+const DB_VERSION = 6;
 
-// ============================================================================
-// Custom Alert System - Creates beautiful, attractive notifications
-// ============================================================================
+// alert popup system
 
 function showAlert(message, type = 'info', duration = 4000) {
     // type can be: 'success', 'error', 'warning', 'info'
@@ -82,7 +80,7 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
         overlay.className = 'custom-modal-overlay';
 
         const fieldsHTML = fields.map(field => {
-            // Disable fields when a saved value should be shown but not changed.
+            // Disable fields when a saved value should be
             const lockedAttribute = field.disabled ? 'disabled' : '';
 
             if (field.type === 'select') {
@@ -166,9 +164,7 @@ function showCustomConfirm(message, options = {}) {
     });
 }
 
-// ============================================================================
-// IndexedDB Configuration
-// ============================================================================
+// db setup
 
 // Initialize IndexedDB
 function initDatabase() {
@@ -181,11 +177,7 @@ function initDatabase() {
             reject(request.error);
         };
 
-        // Fires if an older connection (usually in another open tab) is
-        // still holding the database and blocking this upgrade. Without
-        // this handler, neither onsuccess nor onerror ever fires and `db`
-        // stays undefined forever, causing "Cannot read properties of
-        // undefined (reading 'transaction')" the moment any db function runs.
+        // other tab has db open and is blocking the upgrade
         request.onblocked = () => {
             console.warn('Database upgrade blocked by another open tab/connection.');
             showAlert('Please close other tabs of this app, then reload this page.', 'warning', 6000);
@@ -196,8 +188,7 @@ function initDatabase() {
             db = request.result;
             console.log('Database opened successfully');
 
-            // If another tab later needs to upgrade the schema, this
-            // connection must close itself so that tab isn't blocked in turn.
+            // close so other tabs dont get blocked
             db.onversionchange = () => {
                 db.close();
                 console.warn('Database is outdated; another tab needs an upgrade. Please reload this page.');
@@ -258,11 +249,7 @@ function initDatabase() {
         };
     });
 }
-
-// Check whether a store already has a record with this email.
-// Both 'interns' and 'supervisors' have a UNIQUE index on 'email', so
-// store.add() throws a raw ConstraintError if you try to reuse one.
-// Checking first lets us show a friendly message instead of that error.
+// check for duplicate email before adding
 function emailExistsInStore(storeName, email) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(storeName, 'readonly');
@@ -280,7 +267,7 @@ function addIntern(intern) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('interns', 'readwrite');
         const store = transaction.objectStore('interns');
-        const request = store.add(intern);
+        const request = store.add(intern);      
 
         request.onsuccess = () => {
             console.log('Intern added:', intern);
@@ -504,6 +491,39 @@ function updateGroup(group) {
         request.onerror = () => reject(request.error);
     });
 }
+function getGroupById(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('groups', 'readonly');
+        const store = transaction.objectStore('groups');
+        const request = store.get(id);
+
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+
+        request.onerror = () => {
+            reject(request.error);
+        };
+    });
+}
+
+function deleteGroup(id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('groups', 'readwrite');
+        const store = transaction.objectStore('groups');
+        const request = store.delete(id);
+
+        request.onsuccess = () => {
+            console.log('group :', id);
+            resolve();
+        };
+
+        request.onerror = () => {
+            console.error('Error deleting intern:', request.error);
+            reject(request.error);
+        };
+    });
+}
 
 // Delete Intern
 function deleteIntern(id) {
@@ -524,7 +544,7 @@ function deleteIntern(id) {
     });
 }
 
-// Delete related records for an intern from a store that has an internId index
+// Delete related records for an intern from
 function deleteRecordsByInternId(storeName, internId) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(storeName, 'readwrite');
@@ -610,7 +630,7 @@ function getAttendanceByInternId(internId) {
     });
 }
 
-// Get a single attendance record so status lock rules can compare old and new values.
+// Get a single attendance record so status lock
 function getAttendanceById(id) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('attendance', 'readonly');
@@ -645,7 +665,7 @@ async function updateAttendance(record) {
         throw new Error('Check-out time has already been set and cannot be modified.');
     }
 
-    // The first saved attendance status gets a lock timestamp for future edits.
+    // The first saved attendance status gets a lock
     const recordToSave = {
         ...record,
         statusLockedAt: existingRecord?.statusLockedAt || record.statusLockedAt || new Date().toISOString()
@@ -755,7 +775,7 @@ function saveSetting(key, value) {
     });
 }
 
-// Retrieve one settings value by key and return null when it has not been saved.
+// Retrieve one settings value by key and return
 function getSetting(key) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('settings', 'readonly');
@@ -878,15 +898,14 @@ function handleFormSubmit(event, formType) {
             return;
         }
 
-        // Check for a duplicate email before writing anything, so the
-        // person gets a clear warning instead of a raw database error.
+        // check email isnt already used
         emailExistsInStore('interns', email).then((exists) => {
             if (exists) {
                 showAlert('An intern with this email is already registered.', 'warning');
                 return;
             }
 
-            // Create intern object with all required fields including auto-generated ID
+            // Create intern object with all required fields including
             const intern = {
                 // Unique ID generated using current timestamp in milliseconds
                 id: Date.now(),
@@ -912,17 +931,17 @@ function handleFormSubmit(event, formType) {
 
             // Add intern to database and create corresponding attendance record
             addIntern(intern).then((internData) => {
-                // Call function to automatically create attendance record for new intern
+                // Call function to automatically create attendance record
                 createAttendanceRecordForNewIntern(intern);
                 // Show success message with beautiful alert
                 showAlert('Intern registered successfully.', 'success');
                 // Clear all form fields after successful registration
                 event.target.reset();
-                // Close the dashboard registration modal when this form is inside one.
+                // Close the dashboard registration modal when this form
                 if (document.getElementById('addUserModal')) {
                     closeAddUserModal();
                 }
-                // Refresh the dashboard user list so the new intern appears immediately.
+                // Refresh the dashboard user list so the new
                 loadDashboardUsers();
             }).catch(error => {
                 // Show error message if registration fails
@@ -932,7 +951,7 @@ function handleFormSubmit(event, formType) {
             showAlert('Error checking existing records: ' + (error?.message || error), 'error');
         });
     } else if (formType === 'supervisor') {
-        // Get supervisor form field values from the dedicated supervisors page.
+        // Get supervisor form field values from the dedicated
         const firstName = document.getElementById('supervisorFirstName')?.value.trim();
         const lastName = document.getElementById('supervisorLastName')?.value.trim();
         const email = document.getElementById('supervisorEmail')?.value.trim();
@@ -944,14 +963,14 @@ function handleFormSubmit(event, formType) {
             return;
         }
 
-        // Supervisor names follow the same letters-and-spaces rule as interns.
+        // Supervisor names follow the same letters-and-spaces rule as
         const nameRegex = /^[a-zA-Z\s]+$/;
         if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
             showAlert('Supervisor names can only contain letters and spaces.', 'error');
             return;
         }
 
-        // Supervisor email and phone use the same validation standard as intern registration.
+        // Supervisor email and phone use the same validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             showAlert('Please enter a valid email address.', 'error');
@@ -971,7 +990,7 @@ function handleFormSubmit(event, formType) {
                 return;
             }
 
-            // Store supervisors separately so intern attendance records remain intern-only.
+            // Store supervisors separately so intern attendance records remain
             const supervisor = {
                 id: Date.now(),
                 firstName,
@@ -999,8 +1018,7 @@ function handleFormSubmit(event, formType) {
 }
 
 
-// Parse a "HH:MM AM/PM" string into minutes-since-midnight, or null if it
-// doesn't match that format. Used to validate and compare attendance times.
+// convert time string to minutes for comparing
 function parseTimeToMinutes(timeStr) {
     const match = /^(\d{1,2}):([0-5]\d)\s?(AM|PM)$/i.exec(String(timeStr).trim());
     if (!match) return null;
@@ -1024,13 +1042,13 @@ function parseTimeToMinutes(timeStr) {
 function generateInternID() {
     // Get current year (e.g., 2025)
     const year = new Date().getFullYear();
-    // Generate random number between 0-999 and pad with zeros (e.g., 001)
+    // Generate random number between 0-999 and pad
     const randomNum = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
     // Return formatted ID (e.g., INT-2025-001)
     return `INT-${year}-${randomNum}`;
 }
 
-// Automatically create attendance record when new intern is registered
+// Automatically create attendance record when new intern is
 function createAttendanceRecordForNewIntern(intern) {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
@@ -1075,7 +1093,7 @@ function createAttendanceRecordForNewIntern(intern) {
     });
 }
 
-// Load and update attendance statistics (Total, Present, Late, Absent)
+// update attendance stats (total, present, late, absent)
 async function loadAttendanceStatistics() {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
@@ -1159,7 +1177,7 @@ async function loadAttendanceTable() {
         
         // Loop through each intern to create table rows
         allInterns.forEach(intern => {
-            // Get attendance record for this intern (or use default if not found)
+            // Get attendance record for this intern (or use
             const attendance = attendanceMap[intern.id] || {
                 checkInTime: '-',
                 checkOutTime: '-',
@@ -1171,10 +1189,10 @@ async function loadAttendanceTable() {
             const statusColor = attendance.status === 'Present' ? 'success' : 
                                 attendance.status === 'Late' ? 'warning' : 'danger';
             
-            // Show a lock icon beside statuses that have already been saved and made final.
+            // Show a lock icon beside statuses that have
             const statusLockIcon = attendance.statusLockedAt ? '<i class="fas fa-lock status-lock-icon" title="Status locked"></i>' : '';
 
-            // Generate a status badge with appropriate color and optional lock indicator
+            // Generate a status badge with appropriate color
             const statusBadge = `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}</span>`;
             
             // Add row to HTML table for this intern
@@ -1291,7 +1309,7 @@ async function deleteSelectedInterns() {
     }
 }
 
-// Toggle the animated Users submenu in the sidebar without navigating away.
+// Toggle the animated Users submenu in the sidebar
 function toggleUserSubmenu(event) {
     event.preventDefault();
 
@@ -1303,7 +1321,7 @@ function toggleUserSubmenu(event) {
     submenu.classList.toggle('open');
 }
 
-// Open the dashboard add-user modal that contains the existing registration form.
+// Open the dashboard add-user modal that contains
 function openAddUserModal() {
     const modal = document.getElementById('addUserModal');
     if (!modal) return;
@@ -1313,7 +1331,7 @@ function openAddUserModal() {
     document.body.classList.add('modal-open');
 }
 
-// Close and reset the dashboard registration modal without changing saved users.
+// Close and reset the dashboard registration modal without
 function closeAddUserModal() {
     const modal = document.getElementById('addUserModal');
     if (!modal || modal.hidden) return;
@@ -1359,7 +1377,7 @@ function closeSupervisorModal() {
     }, 180);
 }
 
-// Format stored registration dates into a compact dashboard-friendly value.
+// format registration date for the dashboard
 function formatDashboardDate(value) {
     if (!value) return '-';
 
@@ -1370,12 +1388,12 @@ function formatDashboardDate(value) {
     });
 }
 
-// Build a short initials badge for users that do not have an uploaded avatar.
+// Build a short initials badge for users
 function getUserInitials(firstName, lastName) {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U';
 }
 
-// Load all registered interns into the admin dashboard user table and summary cards.
+// Load all registered interns into the admin dashboard
 async function loadDashboardUsers() {
     const tableContainer = document.querySelector('[data-user-table]');
     if (!tableContainer) return;
@@ -1416,13 +1434,11 @@ async function loadDashboardUsers() {
                         </div>
                     </div>
                 </td>
+                <td>${escapeHTML(intern.gender)}</td>
+                <td>${escapeHTML(intern.phone)}</td>
                 <td>${escapeHTML(intern.department)}</td>
                 <td>${escapeHTML(intern.school || '-')}</td>
-                <td>${escapeHTML(intern.phone)}</td>
-                <td>${escapeHTML(intern.gender)}</td>
                 <td>${escapeHTML(intern.supervisorName || 'Unassigned')}</td>
-                <td>${escapeHTML(intern.groupName || '-')}</td>
-                <td><span class="role-badge ${intern.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(intern.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
@@ -1445,13 +1461,11 @@ async function loadDashboardUsers() {
                 <thead class="table-light">
                     <tr>
                         <th>User</th>
+                        <th>Gender</th>
+                        <th>Phone</th>
                         <th>Department</th>
                         <th>School</th>
-                        <th>Phone</th>
-                        <th>Gender</th>
                         <th>Supervisor</th>
-                        <th>Group</th>
-                        <th>Role</th>
                         <th>Date Added</th>
                         <th>Action</th>
                     </tr>
@@ -1489,8 +1503,8 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    value: intern.department || 'SOFTWARE ENGINEERING',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
                 },
                 {
                     label: 'Gender',
@@ -1499,13 +1513,6 @@ async function editIntern(internId) {
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: intern.role || 'User',
-                    options: ['User', 'Admin']
-                }
             ]
         });
 
@@ -1539,7 +1546,6 @@ async function editIntern(internId) {
             school: values.school.trim(),
             department: values.department,
             gender: values.gender,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
 
@@ -1646,7 +1652,7 @@ async function removeIntern(internId) {
     }
 }
 
-// Load supervisors into the dedicated supervisors page table and summary cards.
+// Load supervisors into the dedicated supervisors page table
 async function loadSupervisorsPage() {
     const tableContainer = document.querySelector('[data-supervisor-table]');
     if (!tableContainer) return;
@@ -1695,13 +1701,13 @@ async function loadSupervisorsPage() {
                             <small class="text-muted">${escapeHTML(supervisor.email)}</small>
                         </div>
                     </div>
-                </td>
-                <td>${escapeHTML(supervisor.department)}</td>
+                </td>   
                 <td>${escapeHTML(supervisor.phone)}</td>
+                <td>${escapeHTML(supervisor.department)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
-                <td><span class="role-badge ${supervisor.role === 'Admin' ? 'admin' : 'user'}">${escapeHTML(supervisor.role || 'User')}</span></td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
+                
                     <div class="table-actions">
                         <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
@@ -1711,12 +1717,7 @@ async function loadSupervisorsPage() {
                         </button>
                         <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
                             <i class="fas fa-trash"></i>
-                        <button class="btn btn-sm btn-danger" type="button" onclick="deleteSupervisor(${supervisor.id})" title="delete Supervisoar">
-                        <i class="fes fa-trash"></i>
-                       </button>
-
                         
-                        </button>
                     </div>
                 </td>
             </tr>
@@ -1727,10 +1728,9 @@ async function loadSupervisorsPage() {
                 <thead class="table-light">
                     <tr>
                         <th>Supervisor</th>
-                        <th>Department</th>
                         <th>Phone</th>
+                        <th>Department</th>
                         <th>Interns</th>
-                        <th>Role</th>
                         <th>Date Added</th>
                         <th>Action</th>
                     </tr>
@@ -1767,16 +1767,11 @@ async function editSupervisor(supervisorId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: supervisor.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    value: supervisor.department || 'SOFTWARE ENGINEERING',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: supervisor.role || 'User',
-                    options: ['User', 'Admin']
-                }
+                
+                
             ]
         });
 
@@ -1808,7 +1803,6 @@ async function editSupervisor(supervisorId) {
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
         showAlert('Supervisor updated successfully.', 'success');
@@ -1938,7 +1932,45 @@ function showSupervisorTab(tabName) {
         loadGroupTools();
     }
 }
+async function removeGroup(groupId) {
+    try {
+        // get the group so we know its name and which interns are in it
+        const group = await getGroupById(groupId);
+        if (!group) return;
 
+        const confirmed = await showCustomConfirm(
+            `Delete "${group.name}"? Interns in this group will be unassigned.`,
+            {
+                title: 'Delete group',
+                confirmText: 'Delete',
+                danger: true
+            }
+        );
+
+        if (!confirmed) return;
+
+        const groupInternIds = group.internIds || [];
+        const interns = await getAllInterns();
+
+        // clear the supervisor/group info off any intern that was in this group
+        await Promise.all(interns
+            .filter(intern => groupInternIds.includes(intern.id))
+            .map(intern => updateIntern({
+                ...intern,
+                supervisorId: null,
+                supervisorName: '',
+                groupName: '',
+                updatedAt: new Date().toISOString()
+            })));
+
+        await deleteGroup(groupId);
+        showAlert('Group deleted successfully.', 'success');
+        await loadSupervisorsPage();
+        await loadGroupTools();
+    } catch (error) {
+        showAlert('Error deleting group: ' + error, 'error');
+    }
+}
 async function loadGroupTools() {
     const supervisorSelect = document.getElementById('groupSupervisor');
     const internList = document.querySelector('[data-group-intern-list]');
@@ -2000,6 +2032,10 @@ async function loadGroupTools() {
                     <div class="group-members">
                         ${groupInternIds.map(internId => `<span>${escapeHTML(internMap[internId] || 'Unknown intern')}</span>`).join('')}
                     </div>
+                    <button class="btn btn-delete-user" type="button" onclick="removeGroup(${group.id})">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
                 </div>
             `;
             }).join('');
@@ -2067,7 +2103,7 @@ function getPerformanceScoreClass(score) {
     return 'needs-work';
 }
 
-// Load all interns with their latest performance review into the performance page.
+// Load all interns with their latest performance review
 async function loadPerformancePage() {
     const tableContainer = document.querySelector('[data-performance-table]');
     if (!tableContainer) return;
@@ -2077,7 +2113,7 @@ async function loadPerformancePage() {
         const allPerformance = await getAllPerformance();
         const performanceMap = {};
 
-        // Keep the most recent performance record per intern for the overview table.
+        // Keep the most recent performance record per intern
         allPerformance.forEach(record => {
             const currentRecord = performanceMap[record.internId];
             if (!currentRecord || new Date(record.updatedAt || record.createdAt) > new Date(currentRecord.updatedAt || currentRecord.createdAt)) {
@@ -2161,7 +2197,7 @@ async function loadPerformancePage() {
     }
 }
 
-// Open a focused modal for adding or updating an intern performance review.
+// Open a focused modal for adding or updating
 async function editPerformance(internId) {
     try {
         const intern = await getInternById(internId);
@@ -2216,7 +2252,7 @@ async function editPerformance(internId) {
             department: intern?.department || performanceRecord.department,
             score,
             rating: values.rating,
-            remarks: values.remarks || '',
+            remarks: (values.remarks) || '',
             updatedAt: new Date().toISOString()
         };
 
@@ -2233,7 +2269,7 @@ async function editPerformance(internId) {
     }
 }
 
-// Load settings page counters and populate saved workspace preferences.
+// Load settings page counters and populate saved workspace
 async function loadSettingsPage() {
     const settingsForm = document.querySelector('.settings-form');
     if (!settingsForm) return;
@@ -2254,7 +2290,7 @@ async function loadSettingsPage() {
         if (attendanceCount) attendanceCount.textContent = attendance.length;
 
         document.getElementById('settingsWorkspaceName').value = await getSetting('workspaceName') || 'InternFlow';
-        document.getElementById('settingsAdminEmail').value = await getSetting('adminEmail') || 'Admin@MIT.flo';
+        document.getElementById('settingsAdminEmail').value = await getSetting('adminEmail') || DEFAULT_ADMIN_EMAIL;
     } catch (error) {
         console.error('Error loading settings page:', error);
         showAlert('Error loading settings: ' + error, 'error');
@@ -2278,6 +2314,7 @@ async function saveSettingsForm(event) {
             saveSetting('workspaceName', workspaceName),
             saveSetting('adminEmail', adminEmail)
         ]);
+        await syncHeaderAdminEmail();
         showAlert('Settings saved successfully.', 'success');
     } catch (error) {
         showAlert('Error saving settings: ' + error, 'error');
@@ -2302,9 +2339,9 @@ async function editAttendance(internId) {
                                      date: today,
                                      createdAt: new Date().toISOString()
                                  };
-        // A locked status can still be viewed in the edit modal, but it cannot be changed.
+        // A locked status can still be viewed
         const isStatusLocked = Boolean(attendanceRecord.statusLockedAt);
-        // Saved times remain visible for review, then become read-only after first entry.
+        // Saved times remain visible for review, then become
         const isCheckInLocked = Boolean(attendanceRecord.checkInTime);
         const isCheckOutLocked = Boolean(attendanceRecord.checkOutTime);
 
@@ -2349,8 +2386,7 @@ async function editAttendance(internId) {
 
         if (!attendanceValues) return;
 
-        // Only fields the person could actually edit need validating —
-        // locked fields keep whatever was already saved.
+        // only validate editable fields
         const rawCheckIn = isCheckInLocked ? attendanceRecord.checkInTime : (attendanceValues.checkIn.trim() || null);
         const rawCheckOut = isCheckOutLocked ? attendanceRecord.checkOutTime : (attendanceValues.checkOut.trim() || null);
 
@@ -2372,7 +2408,7 @@ async function editAttendance(internId) {
             }
         }
 
-        // Update the existing attendance record while preserving its IndexedDB key
+        // Update the existing attendance record while preserving its
         await updateAttendance({
             ...attendanceRecord,
             internId: internId,
@@ -2398,12 +2434,15 @@ async function editAttendance(internId) {
 
 // Initialize database when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // redirect to login if not logged in
+    if (!requireLogin()) return;
+
     // Initialize the IndexedDB database
     initDatabase().then(() => {
         // Log success message when database opens
         console.log('Database initialized and ready to use');
         
-        // Check if this is the attendance page by looking for attendance stat elements
+        // Check if this is the attendance page by
         const attendanceElement = document.getElementById('totalInterns');
         if (attendanceElement) {
             // If attendance page is detected, load statistics
@@ -2412,40 +2451,143 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAttendanceTable();
         }
 
-        // Check if this is the admin dashboard by looking for the user table container
+        // Check if this is the admin dashboard by
         const dashboardTable = document.querySelector('[data-user-table]');
         if (dashboardTable) {
             // Load dashboard summary cards and the full registered user list
             loadDashboardUsers();
         }
 
-        // Check if this is the supervisors page by looking for the supervisor table container
+        // Check if this is the supervisors page by
         const supervisorTable = document.querySelector('[data-supervisor-table]');
         if (supervisorTable) {
-            // Load supervisor summary cards and the full registered supervisor list
+            // Load supervisor summary cards and the full registered
             loadSupervisorsPage();
             loadGroupTools();
         }
 
-        // Check if this is the performance page by looking for its table container
+        // Check if this is the performance page by
         const performanceTable = document.querySelector('[data-performance-table]');
         if (performanceTable) {
             // Load performance summary cards and review table
             loadPerformancePage();
         }
 
-        // Check if this is the settings page by looking for the preferences form
+        // Check if this is the settings page by
         const settingsForm = document.querySelector('.settings-form');
         if (settingsForm) {
             // Load saved preferences and data summary cards
             loadSettingsPage();
         }
+
+        // update header email
+        syncHeaderAdminEmail();
+
+        // set up login page if we're on it
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            initLoginPage();
+        }
     }).catch(error => {
         // Log error if database initialization fails
         console.error('Failed to initialize database:', error);
-        // Surface it to the user too -- previously this failed silently,
-        // and the first sign of trouble was a "reading transaction of
-        // undefined" error on whatever button was clicked next.
+        // show the error too, not just console
         showAlert('Could not open the local database: ' + (error?.message || error), 'error', 6000);
     });
 });
+ // key used to store login session
+ const ADMIN_SESSION_KEY = 'internflow_admin_logged_in';
+
+ // default admin email used everywhere
+ const DEFAULT_ADMIN_EMAIL = 'TeamAstro@gmail.com';
+
+ // updates header email badge
+ async function syncHeaderAdminEmail() {
+    const headerEmailEl = document.getElementById('headerAdminEmail');
+    if (!headerEmailEl) return; // not a page with the dashboard header (e.g. login.html)
+
+    try {
+        headerEmailEl.textContent = (await getSetting('adminEmail')) || DEFAULT_ADMIN_EMAIL;
+    } catch (error) {
+        console.error('Could not load admin email for header:', error);
+    }
+ }
+
+ function isAdminLoggedIn(){
+    return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true" ||
+           localStorage.getItem(ADMIN_SESSION_KEY) === "true";
+ }
+
+ function requireLogin(){
+    if (document.getElementById('loginForm')) return true;
+    if(!isAdminLoggedIn()){
+        window.location.href= 'login.html';
+        return false;
+    }
+    return true;
+ }
+
+ function initLoginPage(){
+    const form = document.getElementById('loginForm');
+    if (!form) return; // not the login page - do nothing
+
+    if (isAdminLoggedIn()) {
+        window.location.href = 'interns.html';
+        return;
+    }
+
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const errorEl = document.getElementById('loginError');
+    const rememberInput = document.getElementById('rememberLogin');
+    const toggleBtn = document.getElementById('togglePassword');
+
+    if (toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', () => {
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+            const icon = toggleBtn.querySelector('i');
+            icon?.classList.toggle('fa-eye');
+            icon?.classList.toggle('fa-eye-slash');
+        });
+    }
+
+   form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (errorEl) errorEl.textContent = '';
+
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+    
+
+    if (!email || !password) {
+        if (errorEl) errorEl.textContent = 'Please enter both your email and password.';
+        return;
+    }
+
+   
+    let adminEmail = DEFAULT_ADMIN_EMAIL;
+    try {
+        adminEmail = (await getSetting('adminEmail')) || adminEmail;
+    } catch (error) {
+        console.error('Could not read saved admin email, using default:', error);
+    }
+    const DEMO_ADMIN_PASSWORD = 'TeamAstro1234';
+
+    if (email.toLowerCase() !== adminEmail.toLowerCase() || password !== DEMO_ADMIN_PASSWORD) {
+        if (errorEl) errorEl.textContent = 'Incorrect email or password.';
+        return;
+    }
+
+    const storage = rememberInput?.checked ? localStorage : sessionStorage;
+    storage.setItem(ADMIN_SESSION_KEY, 'true');
+    window.location.href = 'interns.html';
+    });
+
+ } 
+
+ function logoutAdmin() {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    window.location.href = 'login.html';
+}
+
