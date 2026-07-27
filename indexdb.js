@@ -6,7 +6,7 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 // alert popup system
 
@@ -1434,10 +1434,10 @@ async function loadDashboardUsers() {
                         </div>
                     </div>
                 </td>
+                <td>${escapeHTML(intern.gender)}</td>
+                <td>${escapeHTML(intern.phone)}</td>
                 <td>${escapeHTML(intern.department)}</td>
                 <td>${escapeHTML(intern.school || '-')}</td>
-                <td>${escapeHTML(intern.phone)}</td>
-                <td>${escapeHTML(intern.gender)}</td>
                 <td>${escapeHTML(intern.supervisorName || 'Unassigned')}</td>
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
@@ -1461,10 +1461,10 @@ async function loadDashboardUsers() {
                 <thead class="table-light">
                     <tr>
                         <th>User</th>
+                        <th>Gender</th>
+                        <th>Phone</th>
                         <th>Department</th>
                         <th>School</th>
-                        <th>Phone</th>
-                        <th>Gender</th>
                         <th>Supervisor</th>
                         <th>Date Added</th>
                         <th>Action</th>
@@ -1503,8 +1503,8 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance', ]
+                    value: intern.department || 'SOFTWARE ENGINEERING',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
                 },
                 {
                     label: 'Gender',
@@ -1546,7 +1546,6 @@ async function editIntern(internId) {
             school: values.school.trim(),
             department: values.department,
             gender: values.gender,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
 
@@ -1703,8 +1702,8 @@ async function loadSupervisorsPage() {
                         </div>
                     </div>
                 </td>   
-                <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
+                <td>${escapeHTML(supervisor.department)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
@@ -1729,8 +1728,8 @@ async function loadSupervisorsPage() {
                 <thead class="table-light">
                     <tr>
                         <th>Supervisor</th>
-                        <th>Department</th>
                         <th>Phone</th>
+                        <th>Department</th>
                         <th>Interns</th>
                         <th>Date Added</th>
                         <th>Action</th>
@@ -1768,9 +1767,10 @@ async function editSupervisor(supervisorId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: supervisor.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    value: supervisor.department || 'SOFTWARE ENGINEERING',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
                 },
+                
                 
             ]
         });
@@ -1803,7 +1803,6 @@ async function editSupervisor(supervisorId) {
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
         showAlert('Supervisor updated successfully.', 'success');
