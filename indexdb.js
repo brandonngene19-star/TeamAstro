@@ -6,7 +6,25 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 6;
+const DB_VERSION = 5;
+
+// ============================================================================
+// SHARED VALIDATION PATTERNS
+// Used by registration and edit forms for interns and supervisors, so the
+// rules only need to be defined (and fixed, if needed) in one place.
+// ============================================================================
+
+// Letters and spaces only — used for first/last names.
+const NAME_REGEX = /^[a-zA-Z\s]+$/;
+// A basic "something@something.something" shape — not a full RFC email check,
+// just enough to catch obvious typos.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Checks a phone number has at least 10 digits, ignoring spaces,
+// dashes, and parentheses (so "(555) 123-4567" and "5551234567" both pass).
+function isValidPhone(phone) {
+    return /^\d{10,}$/.test(String(phone).replace(/[\s\-()]/g, ''));
+}
 
 // alert popup system
 
@@ -262,289 +280,153 @@ function emailExistsInStore(storeName, email) {
     });
 }
 
-// Add Intern
-function addIntern(intern) {
+// ============================================================================
+// GENERIC CRUD HELPERS
+// The store-specific functions below (addIntern, getAllSupervisors, etc.)
+// all used to repeat this same transaction/request boilerplate. These five
+// generic helpers do the actual IndexedDB work once; everything else is
+// just a thin wrapper that picks a store name and adds friendly error
+// messages where it matters (e.g. duplicate email).
+// ============================================================================
+
+function dbAdd(storeName, record) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction('interns', 'readwrite');
-        const store = transaction.objectStore('interns');
-        const request = store.add(intern);      
-
-        request.onsuccess = () => {
-            console.log('Intern added:', intern);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding intern:', request.error);
-            if (request.error?.name === 'ConstraintError') {
-                reject(new Error('An intern with this email is already registered.'));
-            } else {
-                reject(request.error);
-            }
-        };
-    });
-}
-
-// Get All Interns
-function getAllInterns() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('interns', 'readonly');
-        const store = transaction.objectStore('interns');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Interns retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving interns:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-// Get Intern by ID
-function getInternById(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('interns', 'readonly');
-        const store = transaction.objectStore('interns');
-        const request = store.get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-}
-
-// Update Intern
-function updateIntern(intern) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('interns', 'readwrite');
-        const store = transaction.objectStore('interns');
-        const request = store.put(intern);
-
-        request.onsuccess = () => {
-            console.log('Intern updated:', intern);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error updating intern:', request.error);
-            if (request.error?.name === 'ConstraintError') {
-                reject(new Error('Another intern is already using that email.'));
-            } else {
-                reject(request.error);
-            }
-        };
-    });
-}
-
-// Add Supervisor
-function addSupervisor(supervisor) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readwrite');
-        const store = transaction.objectStore('supervisors');
-        const request = store.add(supervisor);
-
-        request.onsuccess = () => {
-            console.log('Supervisor added:', supervisor);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding supervisor:', request.error);
-            if (request.error?.name === 'ConstraintError') {
-                reject(new Error('A supervisor with this email is already registered.'));
-            } else {
-                reject(request.error);
-            }
-        };
-    });
-}
-
-// Get All Supervisors
-function getAllSupervisors() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readonly');
-        const store = transaction.objectStore('supervisors');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Supervisors retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving supervisors:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-// Get Supervisor by ID
-function getSupervisorById(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readonly');
-        const store = transaction.objectStore('supervisors');
-        const request = store.get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-}
-
-// Update Supervisor
-function updateSupervisor(supervisor) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readwrite');
-        const store = transaction.objectStore('supervisors');
-        const request = store.put(supervisor);
-
-        request.onsuccess = () => {
-            console.log('Supervisor updated:', supervisor);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error updating supervisor:', request.error);
-            if (request.error?.name === 'ConstraintError') {
-                reject(new Error('Another supervisor is already using that email.'));
-            } else {
-                reject(request.error);
-            }
-        };
-    });
-}
-
-// Delete Supervisor
-function deleteSupervisor(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('supervisors', 'readwrite');
-        const store = transaction.objectStore('supervisors');
-        const request = store.delete(id);
-
-        request.onsuccess = () => {
-            console.log('Supervisor deleted with ID:', id);
-            resolve();
-        };
-
-        request.onerror = () => {
-            console.error('Error deleting supervisor:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function addGroup(group) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readwrite');
-        const store = transaction.objectStore('groups');
-        const request = store.add(group);
-
-        request.onsuccess = () => {
-            console.log('Group added:', group);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding group:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function getAllGroups() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readonly');
-        const store = transaction.objectStore('groups');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Groups retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving groups:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-function updateGroup(group) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readwrite');
-        const store = transaction.objectStore('groups');
-        const request = store.put(group);
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.add(record);
 
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
 }
-function getGroupById(id) {
+
+function dbGetAll(storeName) {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readonly');
-        const store = transaction.objectStore('groups');
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function dbGet(storeName, id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
         const request = store.get(id);
 
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
     });
+}
+
+function dbPut(storeName, record) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(record);
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function dbDelete(storeName, id) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Turns a raw IndexedDB error into a friendly message when it's a
+// duplicate-email problem, otherwise just re-throws it as-is.
+function rejectWithFriendlyMessage(error, duplicateEmailMessage) {
+    if (error?.name === 'ConstraintError') {
+        throw new Error(duplicateEmailMessage);
+    }
+    throw error;
+}
+
+// ---- Intern CRUD ----
+
+function addIntern(intern) {
+    return dbAdd('interns', intern).catch(error =>
+        rejectWithFriendlyMessage(error, 'An intern with this email is already registered.'));
+}
+
+function getAllInterns() {
+    return dbGetAll('interns');
+}
+
+function getInternById(id) {
+    return dbGet('interns', id);
+}
+
+function updateIntern(intern) {
+    return dbPut('interns', intern).catch(error =>
+        rejectWithFriendlyMessage(error, 'Another intern is already using that email.'));
+}
+
+function deleteIntern(id) {
+    return dbDelete('interns', id);
+}
+
+// ---- Supervisor CRUD ----
+
+function addSupervisor(supervisor) {
+    return dbAdd('supervisors', supervisor).catch(error =>
+        rejectWithFriendlyMessage(error, 'A supervisor with this email is already registered.'));
+}
+
+function getAllSupervisors() {
+    return dbGetAll('supervisors');
+}
+
+function getSupervisorById(id) {
+    return dbGet('supervisors', id);
+}
+
+function updateSupervisor(supervisor) {
+    return dbPut('supervisors', supervisor).catch(error =>
+        rejectWithFriendlyMessage(error, 'Another supervisor is already using that email.'));
+}
+
+function deleteSupervisor(id) {
+    return dbDelete('supervisors', id);
+}
+
+// ---- Group CRUD ----
+
+function addGroup(group) {
+    return dbAdd('groups', group);
+}
+
+function getAllGroups() {
+    return dbGetAll('groups');
+}
+
+function getGroupById(id) {
+    return dbGet('groups', id);
+}
+
+function updateGroup(group) {
+    return dbPut('groups', group);
 }
 
 function deleteGroup(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('groups', 'readwrite');
-        const store = transaction.objectStore('groups');
-        const request = store.delete(id);
-
-        request.onsuccess = () => {
-            console.log('group :', id);
-            resolve();
-        };
-
-        request.onerror = () => {
-            console.error('Error deleting intern:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbDelete('groups', id);
 }
 
-// Delete Intern
-function deleteIntern(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('interns', 'readwrite');
-        const store = transaction.objectStore('interns');
-        const request = store.delete(id);
-
-        request.onsuccess = () => {
-            console.log('Intern deleted with ID:', id);
-            resolve();
-        };
-
-        request.onerror = () => {
-            console.error('Error deleting intern:', request.error);
-            reject(request.error);
-        };
-    });
-}
-
-// Delete related records for an intern from
+// Deletes every record in "storeName" that belongs to a specific intern.
+// Used to clean up attendance/performance rows when that intern is deleted.
+// This one can't use the generic helpers above since it has to walk a
+// cursor over many matching records instead of touching a single id.
 function deleteRecordsByInternId(storeName, internId) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(storeName, 'readwrite');
@@ -565,7 +447,7 @@ function deleteRecordsByInternId(storeName, internId) {
     });
 }
 
-// Delete an intern and their linked attendance/performance records
+// Deletes an intern AND all of their attendance/performance history together.
 async function deleteInternWithRecords(internId) {
     await Promise.all([
         deleteRecordsByInternId('attendance', internId),
@@ -574,45 +456,16 @@ async function deleteInternWithRecords(internId) {
     await deleteIntern(internId);
 }
 
-// Add Attendance Record
+// ---- Attendance CRUD ----
+
 function addAttendance(record) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('attendance', 'readwrite');
-        const store = transaction.objectStore('attendance');
-        const request = store.add(record);
-
-        request.onsuccess = () => {
-            console.log('Attendance record added:', record);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding attendance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbAdd('attendance', record);
 }
 
-// Get All Attendance Records
 function getAllAttendance() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('attendance', 'readonly');
-        const store = transaction.objectStore('attendance');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Attendance records retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving attendance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbGetAll('attendance');
 }
 
-// Get Attendance by Intern ID
 function getAttendanceByInternId(internId) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('attendance', 'readonly');
@@ -620,34 +473,17 @@ function getAttendanceByInternId(internId) {
         const index = store.index('internId');
         const request = index.getAll(internId);
 
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
     });
 }
 
-// Get a single attendance record so status lock
 function getAttendanceById(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('attendance', 'readonly');
-        const store = transaction.objectStore('attendance');
-        const request = store.get(id);
-
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
+    return dbGet('attendance', id);
 }
 
-// Update Attendance
+// Saves an attendance record, but enforces "lock" rules so a status/time
+// can't quietly be changed after it was first saved.
 async function updateAttendance(record) {
     // Once statusLockedAt exists, the saved attendance status is final.
     const existingRecord = await getAttendanceById(record.id);
@@ -665,68 +501,25 @@ async function updateAttendance(record) {
         throw new Error('Check-out time has already been set and cannot be modified.');
     }
 
-    // The first saved attendance status gets a lock
+    // The first saved attendance status gets a permanent lock timestamp.
     const recordToSave = {
         ...record,
         statusLockedAt: existingRecord?.statusLockedAt || record.statusLockedAt || new Date().toISOString()
     };
 
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('attendance', 'readwrite');
-        const store = transaction.objectStore('attendance');
-        const request = store.put(recordToSave);
-
-        request.onsuccess = () => {
-            console.log('Attendance record updated:', recordToSave);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error updating attendance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbPut('attendance', recordToSave);
 }
 
-// Add Performance Record
+// ---- Performance CRUD ----
+
 function addPerformance(record) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('performance', 'readwrite');
-        const store = transaction.objectStore('performance');
-        const request = store.add(record);
-
-        request.onsuccess = () => {
-            console.log('Performance record added:', record);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error adding performance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbAdd('performance', record);
 }
 
-// Get All Performance Records
 function getAllPerformance() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('performance', 'readonly');
-        const store = transaction.objectStore('performance');
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-            console.log('Performance records retrieved:', request.result);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error retrieving performance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbGetAll('performance');
 }
 
-// Get Performance by Intern ID
 function getPerformanceByInternId(internId) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('performance', 'readonly');
@@ -734,33 +527,13 @@ function getPerformanceByInternId(internId) {
         const index = store.index('internId');
         const request = index.getAll(internId);
 
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
     });
 }
 
-// Update Performance
 function updatePerformance(record) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('performance', 'readwrite');
-        const store = transaction.objectStore('performance');
-        const request = store.put(record);
-
-        request.onsuccess = () => {
-            console.log('Performance record updated:', record);
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            console.error('Error updating performance:', request.error);
-            reject(request.error);
-        };
-    });
+    return dbPut('performance', record);
 }
 
 // Save a single settings value in the IndexedDB settings store.
@@ -788,6 +561,19 @@ function getSetting(key) {
 }
 
 // Export Data to CSV
+// Wraps a single CSV value in quotes and escapes it, but only when it
+// actually needs it (contains a comma, quote, or line break). This stops
+// a stray comma in someone's name or remarks from silently shifting
+// every column after it.
+function escapeCSVValue(value) {
+    const stringValue = value === null || value === undefined ? '' : String(value);
+    if (/[",\n\r]/.test(stringValue)) {
+        // Double up any quote characters, then wrap the whole thing in quotes.
+        return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    return stringValue;
+}
+
 function exportToCSV(storeName) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -808,10 +594,10 @@ function exportToCSV(storeName) {
             }
 
             const keys = Object.keys(data[0]);
-            let csv = keys.join(',') + '\n';
+            let csv = keys.map(escapeCSVValue).join(',') + '\n';
 
             data.forEach(item => {
-                const values = keys.map(key => item[key]);
+                const values = keys.map(key => escapeCSVValue(item[key]));
                 csv += values.join(',') + '\n';
             });
 
@@ -875,25 +661,23 @@ function handleFormSubmit(event, formType) {
         }
 
         // Name validation - only letters and spaces allowed
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        if (!nameRegex.test(firstName)) {
+        if (!NAME_REGEX.test(firstName)) {
             showAlert('First name can only contain letters and spaces. No numbers or special characters allowed.', 'error');
             return;
         }
-        if (!nameRegex.test(lastName)) {
+        if (!NAME_REGEX.test(lastName)) {
             showAlert('Last name can only contain letters and spaces. No numbers or special characters allowed.', 'error');
             return;
         }
 
         // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (!EMAIL_REGEX.test(email)) {
             showAlert('Please enter a valid email address.', 'error');
             return;
         }
 
         // Phone validation (checks if it's numeric with at least 10 digits)
-        if (!/^\d{10,}$/.test(phone.replace(/[\s\-()]/g, ''))) {
+        if (!isValidPhone(phone)) {
             showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
             return;
         }
@@ -963,21 +747,19 @@ function handleFormSubmit(event, formType) {
             return;
         }
 
-        // Supervisor names follow the same letters-and-spaces rule as
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+        // Supervisor names follow the same letters-and-spaces rule as interns.
+        if (!NAME_REGEX.test(firstName) || !NAME_REGEX.test(lastName)) {
             showAlert('Supervisor names can only contain letters and spaces.', 'error');
             return;
         }
 
-        // Supervisor email and phone use the same validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        // Supervisor email and phone use the same validation as interns.
+        if (!EMAIL_REGEX.test(email)) {
             showAlert('Please enter a valid email address.', 'error');
             return;
         }
 
-        if (!/^\d{10,}$/.test(phone.replace(/[\s\-()]/g, ''))) {
+        if (!isValidPhone(phone)) {
             showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
             return;
         }
@@ -1434,10 +1216,10 @@ async function loadDashboardUsers() {
                         </div>
                     </div>
                 </td>
-                <td>${escapeHTML(intern.gender)}</td>
-                <td>${escapeHTML(intern.phone)}</td>
                 <td>${escapeHTML(intern.department)}</td>
                 <td>${escapeHTML(intern.school || '-')}</td>
+                <td>${escapeHTML(intern.phone)}</td>
+                <td>${escapeHTML(intern.gender)}</td>
                 <td>${escapeHTML(intern.supervisorName || 'Unassigned')}</td>
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
@@ -1461,10 +1243,10 @@ async function loadDashboardUsers() {
                 <thead class="table-light">
                     <tr>
                         <th>User</th>
-                        <th>Gender</th>
-                        <th>Phone</th>
                         <th>Department</th>
                         <th>School</th>
+                        <th>Phone</th>
+                        <th>Gender</th>
                         <th>Supervisor</th>
                         <th>Date Added</th>
                         <th>Action</th>
@@ -1503,8 +1285,8 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: intern.department || 'SOFTWARE ENGINEERING',
-                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
+                    value: intern.department || 'Software Engineering',
+                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
                 },
                 {
                     label: 'Gender',
@@ -1513,26 +1295,31 @@ async function editIntern(internId) {
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
+                {
+                    label: 'Role',
+                    name: 'role',
+                    type: 'select',
+                    value: intern.role || 'User',
+                    options: ['User', 'Admin']
+                }
             ]
         });
 
         if (!values) return;
 
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!values.firstName.trim() || !values.lastName.trim() || !values.email.trim() || !values.phone.trim() || !values.school.trim() || !values.department || !values.gender) {
             showAlert('Please complete all intern fields.', 'warning');
             return;
         }
-        if (!nameRegex.test(values.firstName.trim()) || !nameRegex.test(values.lastName.trim())) {
+        if (!NAME_REGEX.test(values.firstName.trim()) || !NAME_REGEX.test(values.lastName.trim())) {
             showAlert('Intern names can only contain letters and spaces.', 'error');
             return;
         }
-        if (!emailRegex.test(values.email.trim())) {
+        if (!EMAIL_REGEX.test(values.email.trim())) {
             showAlert('Please enter a valid email address.', 'error');
             return;
         }
-        if (!/^\d{10,}$/.test(values.phone.replace(/[\s\-()]/g, ''))) {
+        if (!isValidPhone(values.phone)) {
             showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
             return;
         }
@@ -1546,6 +1333,7 @@ async function editIntern(internId) {
             school: values.school.trim(),
             department: values.department,
             gender: values.gender,
+            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
 
@@ -1701,13 +1489,12 @@ async function loadSupervisorsPage() {
                             <small class="text-muted">${escapeHTML(supervisor.email)}</small>
                         </div>
                     </div>
-                </td>   
-                <td>${escapeHTML(supervisor.phone)}</td>
+                </td>
                 <td>${escapeHTML(supervisor.department)}</td>
+                <td>${escapeHTML(supervisor.phone)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
-                
                     <div class="table-actions">
                         <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
@@ -1717,7 +1504,7 @@ async function loadSupervisorsPage() {
                         </button>
                         <button class="btn btn-sm btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
                             <i class="fas fa-trash"></i>
-                        
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -1728,8 +1515,8 @@ async function loadSupervisorsPage() {
                 <thead class="table-light">
                     <tr>
                         <th>Supervisor</th>
-                        <th>Phone</th>
                         <th>Department</th>
+                        <th>Phone</th>
                         <th>Interns</th>
                         <th>Date Added</th>
                         <th>Action</th>
@@ -1767,31 +1554,34 @@ async function editSupervisor(supervisorId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: supervisor.department || 'SOFTWARE ENGINEERING',
-                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE', 'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHIC AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
+                    value: supervisor.department || 'Software Engineering',
+                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
                 },
-                
-                
+                {
+                    label: 'Role',
+                    name: 'role',
+                    type: 'select',
+                    value: supervisor.role || 'User',
+                    options: ['User', 'Admin']
+                }
             ]
         });
 
         if (!values) return;
 
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!values.firstName.trim() || !values.lastName.trim() || !values.email.trim() || !values.phone.trim() || !values.department) {
             showAlert('Please complete all supervisor fields.', 'warning');
             return;
         }
-        if (!nameRegex.test(values.firstName.trim()) || !nameRegex.test(values.lastName.trim())) {
+        if (!NAME_REGEX.test(values.firstName.trim()) || !NAME_REGEX.test(values.lastName.trim())) {
             showAlert('Supervisor names can only contain letters and spaces.', 'error');
             return;
         }
-        if (!emailRegex.test(values.email.trim())) {
+        if (!EMAIL_REGEX.test(values.email.trim())) {
             showAlert('Please enter a valid email address.', 'error');
             return;
         }
-        if (!/^\d{10,}$/.test(values.phone.replace(/[\s\-()]/g, ''))) {
+        if (!isValidPhone(values.phone)) {
             showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
             return;
         }
@@ -1803,6 +1593,7 @@ async function editSupervisor(supervisorId) {
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
+            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
         showAlert('Supervisor updated successfully.', 'success');
