@@ -10,7 +10,7 @@
     <script src="indexdb.js"></script>
 </head>
 <body>
-    <!-- login page layout, 2 columns -->
+    
     <main class="login-shell">
         <!-- left side, just for looks -->
         <section class="login-showcase" aria-label="InternFlow overview">
@@ -28,7 +28,7 @@
                     <p>Sign in to your admin account to manage interns, attendance, supervisor assignments, and reports in one place.</p>
                 </div>
 
-                <!-- fake dashboard preview, all css -->
+                
                 <div class="workspace-preview" aria-hidden="true">
                     <div class="mini-card attendance-card">
                         <span>Today's Attendance</span>
@@ -66,7 +66,7 @@
             </div>
         </section>
 
-        <!-- right side, actual login form -->
+        
         <section class="login-panel" aria-label="Admin login">
             <div class="glow-circle top"></div>
             <div class="glow-circle middle"></div>
@@ -81,7 +81,7 @@
                     </div>
                 </div>
 
-                <!-- login form, handled in indexdb.js -->
+                
                 <form class="login-card" id="loginForm" novalidate>
                     <label class="login-field" for="loginEmail">
                         <span>Email Address</span>
@@ -96,7 +96,6 @@
                         <div class="input-wrap">
                             <i class="fas fa-lock"></i>
                             <input id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
-                            <!-- show/hide password btn -->
                             <button class="password-toggle" type="button" id="togglePassword" aria-label="Show password">
                                 <i class="far fa-eye"></i>
                             </button>
@@ -108,20 +107,18 @@
                             <input id="rememberLogin" type="checkbox" checked>
                             <span>Remember me</span>
                         </label>
-                        <!-- not hooked up yet -->
                         <button type="button" id="forgotPassword">Forgot Password?</button>
                     </div>
 
-                    <!-- js fills this in if login fails -->
                     <p class="login-error" id="loginError" role="alert"></p>
 
-                    <button class="signin-button" type="submit" onclick="initLoginPage()">
+                    <button class="signin-button" type="submit">
                         <i class="fas fa-right-to-bracket"></i>
                         <span>Sign In</span>
                     </button>
 
                     <div class="login-divider">
-                        
+                        <span>OR</span>
                     </div>
                 </form>
 
