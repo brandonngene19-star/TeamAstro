@@ -6,12 +6,13 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 6;
+const DB_VERSION = 5;
 
+// ============================================================================
 // SHARED VALIDATION PATTERNS
 // Used by registration and edit forms for interns and supervisors, so the
 // rules only need to be defined (and fixed, if needed) in one place.
-
+// ============================================================================
 
 // Letters and spaces only — used for first/last names.
 const NAME_REGEX = /^[a-zA-Z\s]+$/;
@@ -559,6 +560,11 @@ function getSetting(key) {
     });
 }
 
+// Export Data to CSV
+// Wraps a single CSV value in quotes and escapes it, but only when it
+// actually needs it (contains a comma, quote, or line break). This stops
+// a stray comma in someone's name or remarks from silently shifting
+// every column after it.
 function escapeCSVValue(value) {
     const stringValue = value === null || value === undefined ? '' : String(value);
     if (/[",\n\r]/.test(stringValue)) {
@@ -1049,25 +1055,26 @@ function bindAttendanceSelectionControls() {
         checkbox.addEventListener('change', updateDeleteButton);
     });
 
-    deleteButton.onclick = deleteSelectedInterns;
+    deleteButton.onclick = deleteSelectedAttendanceRecords;
     updateDeleteButton();
 }
 
-// Delete all selected interns from the attendance roster
-async function deleteSelectedInterns() {
+// Clear attendance records for selected interns WITHOUT touching the
+// intern record itself or their performance history.
+async function deleteSelectedAttendanceRecords() {
     const selectedIds = Array.from(document.querySelectorAll('.intern-select:checked'))
         .map(checkbox => Number(checkbox.value));
 
     if (selectedIds.length === 0) {
-        showAlert('Select at least one intern to delete.', 'warning');
+        showAlert('Select at least one intern to clear attendance for.', 'warning');
         return;
     }
 
     const label = selectedIds.length === 1 ? 'this intern' : `these ${selectedIds.length} interns`;
     const confirmed = await showCustomConfirm(
-        `Delete ${label}? This will also remove linked attendance and performance records.`,
+        `Delete attendance records for ${label}? The intern record itself will not be affected.`,
         {
-            title: 'Delete Selected Interns',
+            title: 'Delete Attendance Records',
             confirmText: 'Delete',
             danger: true
         }
@@ -1075,13 +1082,89 @@ async function deleteSelectedInterns() {
     if (!confirmed) return;
 
     try {
-        await Promise.all(selectedIds.map(deleteInternWithRecords));
-        showAlert(`${selectedIds.length} intern${selectedIds.length === 1 ? '' : 's'} deleted successfully.`, 'success');
+        // deleteRecordsByInternId only touches the one store you pass it —
+        // here that's 'attendance', so the intern and their performance
+        // history are left completely alone.
+        await Promise.all(selectedIds.map(internId => deleteRecordsByInternId('attendance', internId)));
+        showAlert(`Attendance cleared for ${selectedIds.length} intern${selectedIds.length === 1 ? '' : 's'}.`, 'success');
         await loadAttendanceStatistics();
         await loadAttendanceTable();
     } catch (error) {
-        console.error('Error deleting selected interns:', error);
-        showAlert('Error deleting selected interns: ' + error, 'error');
+        console.error('Error deleting attendance records:', error);
+        showAlert('Error deleting attendance records: ' + error, 'error');
+    }
+}
+
+// Keep row checkboxes, header checkbox, and delete button in sync
+// (same pattern as bindAttendanceSelectionControls, but scoped to the
+// Performance page's own checkboxes so the two pages never interfere).
+function bindPerformanceSelectionControls() {
+    const selectAllCheckbox = document.querySelector('.table thead input[type="checkbox"]');
+    const rowCheckboxes = Array.from(document.querySelectorAll('.performance-select'));
+    const deleteButton = document.getElementById('deleteSelectedInterns');
+
+    if (!deleteButton) return;
+
+    const updateDeleteButton = () => {
+        const selectedCount = rowCheckboxes.filter(checkbox => checkbox.checked).length;
+        deleteButton.disabled = selectedCount === 0;
+        deleteButton.querySelector('span').textContent = selectedCount > 0 ? `Delete (${selectedCount})` : 'Delete';
+
+        if (selectAllCheckbox) {
+            const selectableCount = rowCheckboxes.filter(checkbox => !checkbox.disabled).length;
+            selectAllCheckbox.checked = selectedCount > 0 && selectedCount === selectableCount;
+            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableCount;
+        }
+    };
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            rowCheckboxes.forEach(checkbox => {
+                if (!checkbox.disabled) checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateDeleteButton();
+        });
+    }
+
+    rowCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateDeleteButton);
+    });
+
+    deleteButton.onclick = deleteSelectedPerformanceRecords;
+    updateDeleteButton();
+}
+
+// Clear performance reviews for selected interns WITHOUT touching the
+// intern record itself or their attendance history.
+async function deleteSelectedPerformanceRecords() {
+    const selectedIds = Array.from(document.querySelectorAll('.performance-select:checked'))
+        .map(checkbox => Number(checkbox.value));
+
+    if (selectedIds.length === 0) {
+        showAlert('Select at least one intern to clear performance reviews for.', 'warning');
+        return;
+    }
+
+    const label = selectedIds.length === 1 ? 'this intern' : `these ${selectedIds.length} interns`;
+    const confirmed = await showCustomConfirm(
+        `Delete performance reviews for ${label}? The intern record itself will not be affected.`,
+        {
+            title: 'Delete Performance Records',
+            confirmText: 'Delete',
+            danger: true
+        }
+    );
+    if (!confirmed) return;
+
+    try {
+        // deleteRecordsByInternId only touches the 'performance' store here,
+        // so the intern and their attendance history are left completely alone.
+        await Promise.all(selectedIds.map(internId => deleteRecordsByInternId('performance', internId)));
+        showAlert(`Performance reviews cleared for ${selectedIds.length} intern${selectedIds.length === 1 ? '' : 's'}.`, 'success');
+        await loadPerformancePage();
+    } catch (error) {
+        console.error('Error deleting performance records:', error);
+        showAlert('Error deleting performance records: ' + error, 'error');
     }
 }
 
@@ -1279,8 +1362,8 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: intern.department || 'SOFTWARE ENGINEERING',
-                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE' ,'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHICS AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
+                    value: intern.department || 'Software Engineering',
+                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
                 },
                 {
                     label: 'Gender',
@@ -1934,10 +2017,12 @@ async function loadPerformancePage() {
             const performance = performanceMap[intern.id];
             const score = Number(performance?.score || 0);
             const scoreLabel = performance ? `${score}%` : 'Pending';
+            // Only interns with an actual review are worth selecting for deletion.
+            const checkboxDisabled = performance ? '' : 'disabled title="No performance review to delete yet"';
 
             return `
                 <tr>
-<td><input type="checkbox" data-performance-select value=${intern.id}"></td>
+                    <td><input type="checkbox" class="form-check-input performance-select" value="${intern.id}" ${checkboxDisabled}></td>
                     <td>
                         <div class="dashboard-user-cell">
                             <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
@@ -1961,8 +2046,8 @@ async function loadPerformancePage() {
             <table class="table table-hover dashboard-user-table">
                 <thead class="table-light">
                     <tr>
-                      <th><input type="checkbox" id="selectAllperformance"></th> 
-                    <th>Intern</th>
+                        <th style="width: 5%"><input type="checkbox" class="form-check-input"></th>
+                        <th>Intern</th>
                         <th>Department</th>
                         <th>Score</th>
                         <th>Rating</th>
@@ -1976,6 +2061,7 @@ async function loadPerformancePage() {
                 </tbody>
             </table>
         `;
+        bindPerformanceSelectionControls();
     } catch (error) {
         console.error('Error loading performance page:', error);
         showAlert('Error loading performance records: ' + error, 'error');
