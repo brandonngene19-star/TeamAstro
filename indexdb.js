@@ -6,13 +6,12 @@ let db;
 const DB_NAME = 'InternFlowDB';
 
 // Database version - incremented when schema changes
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
-// ============================================================================
 // SHARED VALIDATION PATTERNS
 // Used by registration and edit forms for interns and supervisors, so the
 // rules only need to be defined (and fixed, if needed) in one place.
-// ============================================================================
+
 
 // Letters and spaces only — used for first/last names.
 const NAME_REGEX = /^[a-zA-Z\s]+$/;
@@ -560,11 +559,6 @@ function getSetting(key) {
     });
 }
 
-// Export Data to CSV
-// Wraps a single CSV value in quotes and escapes it, but only when it
-// actually needs it (contains a comma, quote, or line break). This stops
-// a stray comma in someone's name or remarks from silently shifting
-// every column after it.
 function escapeCSVValue(value) {
     const stringValue = value === null || value === undefined ? '' : String(value);
     if (/[",\n\r]/.test(stringValue)) {
