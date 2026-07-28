@@ -1285,18 +1285,13 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-<<<<<<< HEAD
-                    value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
-=======
                     value: intern.department || 'SOFTWARE ENGINEERING',
                     options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE' ,'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHICS AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
->>>>>>> 2ea3aa1ef9d798acbdc68137eae78c22b85e3c98
                 },
                 {
                     label: 'Gender',
                     name: 'gender',
-                    type: 'select'
+                    type: 'select',
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
