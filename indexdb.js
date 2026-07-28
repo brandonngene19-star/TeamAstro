@@ -1285,13 +1285,18 @@ async function editIntern(internId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
+<<<<<<< HEAD
                     value: intern.department || 'Software Engineering',
                     options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+=======
+                    value: intern.department || 'SOFTWARE ENGINEERING',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE AND NETWORKS', 'QUALITY ASSURANCE' ,'ACCOUNTING', 'PROJECT DRIVING SCHOOL', 'FABRIC OFFICE', 'GRAPHICS AND PRINTING', 'BINDING','MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'OFFICE AUTOMATION'  ]
+>>>>>>> 2ea3aa1ef9d798acbdc68137eae78c22b85e3c98
                 },
                 {
                     label: 'Gender',
                     name: 'gender',
-                    type: 'select',
+                    type: 'select'
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
@@ -1943,6 +1948,7 @@ async function loadPerformancePage() {
 
             return `
                 <tr>
+<td><input type="checkbox" data-performance-select value=${intern.id}"></td>
                     <td>
                         <div class="dashboard-user-cell">
                             <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
@@ -1966,7 +1972,8 @@ async function loadPerformancePage() {
             <table class="table table-hover dashboard-user-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Intern</th>
+                      <th><input type="checkbox" id="selectAllperformance"></th> 
+                    <th>Intern</th>
                         <th>Department</th>
                         <th>Score</th>
                         <th>Rating</th>
