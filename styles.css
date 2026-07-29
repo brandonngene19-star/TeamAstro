@@ -23,214 +23,155 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
 }
 
-/* ======================================== CUSTOM ALERT SYSTEM - Beautiful Notifications */
+/* alert popup system */
 
-/* Alert Container - Holds all alerts */
+/* floating alert wrapper */
 #alertContainer {
-    /* Position fixed at top right of screen */
     position: fixed;
-    /* 20px from top */
     top: 20px;
-    /* 20px from right */
     right: 20px;
-    /* Above all other elements */
     z-index: 9999;
-    /* Stack alerts vertically */
     display: flex;
-    /* Direction: stack downward */
     flex-direction: column;
-    /* Space between alerts */
     gap: 12px;
-    /* Allow pointer events to pass through */
     pointer-events: none;
 }
 
-/* Individual Alert Element */
+/* alert card */
 .custom-alert {
-    /* Use flex for layout */
     display: flex;
-    /* Stack content vertically */
     flex-direction: column;
-    /* Min width for readability */
     min-width: 300px;
-    /* Max width to prevent overflow */
     max-width: 400px;
-    /* Rounded corners for modern look */
     border-radius: 12px;
-    /* Shadow for depth effect */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    /* Allow pointer events on alert */
     pointer-events: auto;
-    /* Smooth transition for opacity */
     transition: all 0.3s ease;
-    /* Overflow hidden for rounded progress bar */
     overflow: hidden;
 }
 
-/* Alert Content Container */
+/* alert body */
 .alert-content {
-    /* Flex layout for icon, message, close button */
     display: flex;
-    /* Align items vertically centered */
     align-items: center;
-    /* Space around items */
     gap: 12px;
-    /* Internal padding */
     padding: 16px 20px;
 }
 
-/* Alert Icon */
+/* alert icon */
 .alert-icon {
-    /* Fixed width for consistent alignment */
     flex-shrink: 0;
-    /* Larger icon size */
     font-size: 24px;
-    /* Smooth transition for animations */
     animation: bounce 0.6s ease;
 }
 
-/* Bounce animation for icon */
+/* icon bounce */
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
 }
 
-/* Alert Message Text */
+/* alert text */
 .alert-message {
-    /* Take remaining space */
     flex: 1;
-    /* Font weight for readability */
     font-weight: 500;
-    /* Font size */
     font-size: 14px;
-    /* Line height for spacing */
     line-height: 1.4;
 }
 
-/* Close Button */
+/* close x button */
 .alert-close {
-    /* Remove default button styles */
     background: none;
     border: none;
-    /* Cursor pointer for interaction */
     cursor: pointer;
-    /* Text color */
     color: currentColor;
-    /* Opacity for subtle appearance */
     opacity: 0.7;
-    /* Smooth transition on hover */
     transition: opacity 0.2s ease;
-    /* Remove padding */
     padding: 4px;
-    /* Make circular */
     border-radius: 50%;
-    /* Center content */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .alert-close:hover {
-    /* Increase opacity on hover */
     opacity: 1;
 }
 
-/* Progress Bar - Shows remaining time */
+/* timer line */
 .alert-progress {
-    /* Height of progress bar */
     height: 4px;
-    /* Full width */
     width: 100%;
-    /* Inherit background from alert type */
     background-color: currentColor;
-    /* Animate width from full to empty */
     animation: progress-bar 4s linear forwards;
 }
 
-/* Progress bar animation - shrinks over time */
+/* shrink line timer */
 @keyframes progress-bar {
     from { width: 100%; }
     to { width: 0%; }
 }
 
-/* Slide In Animation - Alert enters from */
+/* pop in anim */
 .animate-slide-in {
     animation: slide-in 0.4s ease-out;
 }
 
 @keyframes slide-in {
     from {
-        /* Start off-screen to the right */
         transform: translateX(400px);
-        /* Start transparent */
         opacity: 0;
     }
     to {
-        /* End at normal position */
         transform: translateX(0);
-        /* End fully visible */
         opacity: 1;
     }
 }
 
-/* Slide Out Animation - Alert exits */
+/* yeet off screen */
 .animate-slide-out {
     animation: slide-out 0.4s ease-in forwards !important;
 }
 
 @keyframes slide-out {
     from {
-        /* Start at normal position */
         transform: translateX(0);
-        /* Start fully visible */
         opacity: 1;
     }
     to {
-        /* End off-screen to the right */
         transform: translateX(400px);
-        /* End transparent */
         opacity: 0;
     }
 }
 
-/* ======================================== SUCCESS ALERT - Green Theme ======================================== */
+/* success alert style */
 .custom-alert-success {
-    /* Success green background */
     background-color: var(--color-success-bg);
-    /* Green border */
     border-left: 5px solid var(--color-success);
-    /* Green text color */
     color: #065f46;
 }
 
 .custom-alert-success .alert-icon {
-    /* Simple success check icon */
     font-size: 18px;
     font-weight: 700;
 }
 
 .custom-alert-success .alert-close {
-    /* Match text color */
     color: #065f46;
 }
 
 .custom-alert-success .alert-progress {
-    /* Green progress bar */
     background-color: var(--color-success);
 }
 
-/* ======================================== ERROR ALERT - Red Theme ======================================== */
+/* error alert style */
 .custom-alert-error {
-    /* Error red background */
     background-color: var(--color-danger-bg);
-    /* Red border */
     border-left: 5px solid var(--color-danger);
-    /* Red text color */
     color: #7f1d1d;
 }
 
 .custom-alert-error .alert-icon {
-    /* Animation for error icon */
     animation: shake 0.5s ease;
 }
 
@@ -241,55 +182,44 @@
 }
 
 .custom-alert-error .alert-close {
-    /* Match text color */
     color: #7f1d1d;
 }
 
 .custom-alert-error .alert-progress {
-    /* Red progress bar */
     background-color: var(--color-danger);
 }
 
-/* ======================================== WARNING ALERT - Orange Theme ======================================== */
+/* warning alert style */
 .custom-alert-warning {
-    /* Warning orange background */
     background-color: var(--color-warning-bg);
-    /* Orange border */
     border-left: 5px solid var(--color-warning);
-    /* Orange text color */
     color: #92400e;
 }
 
 .custom-alert-warning .alert-close {
-    /* Match text color */
     color: #92400e;
 }
 
 .custom-alert-warning .alert-progress {
-    /* Orange progress bar */
     background-color: var(--color-warning);
 }
 
-/* ======================================== INFO ALERT - Blue Theme ======================================== */
+/* info alert style */
 .custom-alert-info {
-    /* Info blue background */
     background-color: #eff6ff;
-    /* Blue border */
     border-left: 5px solid #3b82f6;
-    /* Blue text color */
     color: #1e40af;
 }
 
 .custom-alert-info .alert-close {
-    /* Match text color */
     color: #1e40af;
 }
 
 .custom-alert-info .alert-progress {
-    /* Blue progress bar */
     background-color: #3b82f6;
 }
 
+/* modal backdrop */
 .custom-modal-overlay {
     position: fixed;
     inset: 0;
@@ -306,6 +236,7 @@
     animation: modal-fade-out 0.18s ease-in forwards;
 }
 
+/* modal card */
 .custom-modal {
     width: min(460px, 100%);
     background: white;
@@ -315,7 +246,7 @@
     animation: modal-slide-up 0.22s ease-out;
 }
 
-/* Add-user modal needs extra width */
+/* wider modal for adding users */
 .add-user-modal {
     width: min(920px, 100%);
     max-height: calc(100vh - 48px);
@@ -388,7 +319,7 @@
     font: inherit;
 }
 
-/* Locked modal fields show saved values without */
+/* read-only fields */
 .custom-modal-field input:disabled,
 .custom-modal-field select:disabled {
     color: var(--text-muted);
@@ -396,7 +327,7 @@
     cursor: not-allowed;
 }
 
-/* Helper text explains why a locked field */
+/* hint text below inputs */
 .custom-modal-field small {
     color: var(--text-muted);
     font-size: 0.78rem;
@@ -417,7 +348,7 @@
     gap: 10px;
 }
 
-/* Registration modal actions span the form width */
+/* full width buttons row */
 .add-user-actions {
     grid-column: 1 / -1;
     margin-top: 4px;
@@ -462,6 +393,7 @@
     background: #dc2626;
 }
 
+/* modal animations */
 @keyframes modal-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -483,19 +415,15 @@
     }
 }
 
-/* ======================================== RESPONSIVE DESIGN ======================================== */
-
-/* Mobile devices */
+/* mobile responsive stuff */
 @media (max-width: 768px) {
     #alertContainer {
-        /* Adjust for smaller screens */
         right: 10px;
         left: 10px;
         width: auto;
     }
     
     .custom-alert {
-        /* Ensure full width on mobile */
         width: 100%;
     }
 
@@ -511,7 +439,7 @@
         width: 100%;
     }
 
-    /* Stack dashboard controls and cards on narrow */
+    /* stack everything vertically */
     .dashboard-toolbar,
     .stats-container {
         flex-direction: column;
@@ -530,6 +458,7 @@
         grid-template-columns: 1fr;
     }
 }
+
 * {
     margin: 0;
     padding: 0;
@@ -540,7 +469,6 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    
 }
 
 header {
@@ -572,44 +500,38 @@ header {
     margin-top: 0;
 }
 
-.Top-Header{
+.Top-Header {
     display: flex;
     justify-content: space-between;
-
     background-color: var(--bg-body);
-
-
-
 }
 
-.left-header{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-}
-
-.middle-header{
+.left-header {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.middle-header p{
+.middle-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.middle-header p {
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-main);
     border-bottom: 2px solid var(--primary-color);
-
 }
 
-.right-header{
+.right-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    
 }
-.user-initials{
+
+.user-initials {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -621,54 +543,58 @@ header {
     font-weight: bold;
     font-size: 1rem;
 }
+
 .material-symbols-outlined.brand-icon {
-    font-size:30px;
+    font-size: 30px;
     color: var(--primary-color);
     font-weight: 600; 
     margin-left: 10px;   
-
 }
 
-
-.brand-text{
+.brand-text {
     line-height: 1.2;
 }
 
-.brand-title{
+.brand-title {
     font-size: 16px;
     font-weight: 700;
     color: var(--text-main);
-    margin-top:8px;
+    margin-top: 8px;
     margin-bottom: -3px;
 }
-.brand-subtitle{
+
+.brand-subtitle {
     font-size: 10px;
     color: var(--text-muted);
     font-weight: 500;
 }
-.user-info{
+
+.user-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.user-name{
+.user-name {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-main);
-    padding-top:14px;
+    padding-top: 14px;
     margin-bottom: -6px;
 }
-.user-email{
+
+.user-email {
     font-size: 12px;
     color: var(--text-muted);
     font-weight: 500;
 }
-.user-email:hover{
+
+.user-email:hover {
     text-decoration: underline;
     cursor: pointer;
 }
-.user-initials{
+
+.user-initials {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -680,14 +606,14 @@ header {
     font-weight: bold;
     font-size: 1rem;
     margin-right: 8px;
-
 }
-.user-initials:hover{
+
+.user-initials:hover {
     background-color: var(--primary-hover);
     cursor: pointer;
 }
 
-/* ======================================== SIDEBAR NAVIGATION - one consistent link */
+/* sidebar navigation styling */
 
 .side-nav {
     display: flex;
@@ -697,7 +623,7 @@ header {
     padding: 0 16px;
 }
 
-/* Every sidebar row - top-level links, */
+/* nav link item */
 .nav-link {
     display: flex;
     align-items: center;
@@ -716,7 +642,7 @@ header {
     cursor: pointer;
 }
 
-/* Fixed icon column keeps every label starting */
+/* icon layout fix */
 .nav-link i:first-child {
     width: 18px;
     flex-shrink: 0;
@@ -738,7 +664,7 @@ header {
     color: white;
 }
 
-/* Chevron on the User toggle rotates open/closed */
+/* dropdown arrow toggle */
 .nav-chevron {
     flex-shrink: 0;
     font-size: 0.7rem;
@@ -749,7 +675,7 @@ header {
     transform: rotate(180deg);
 }
 
-/* Animated submenu reveals Supervisors and Interns under */
+/* dropdown menu */
 .user-submenu {
     display: grid;
     gap: 4px;
@@ -796,7 +722,7 @@ header {
     color: white;
 }
 
-/* Log out is pinned to the bottom */
+/* sticky logout link */
 .logout {
     margin-top: auto;
     width: 100%;
@@ -821,7 +747,7 @@ header {
     color: white;
 }
 
-/* Content header and body styling */
+/* main page header & body */
 .content-header {
     margin-bottom: 24px;
 }
@@ -846,29 +772,31 @@ header {
     line-height: 1.6;
 }
 
-.mb-3{
-    margin-top:70px;
-
+.mb-3 {
+    margin-top: 70px;
 }
-.mb-3 label{
+
+.mb-3 label {
     font-size: 20px;
     font-weight: 700;
 }
-.col-12{
+
+.col-12 {
     margin-top: 20px;
 }
 
-.btns{
+.btns {
     display: flex;
     flex-direction: row;
     gap: 10px;
 }
-.row-1{
+
+.row-1 {
     display: flex;
     justify-content: space-between;
 }
 
-/* Export button styling */
+/* export button */
 .btn-export {
     display: inline-flex;
     align-items: center;
@@ -900,6 +828,7 @@ header {
     font-size: 1.1rem;
 }
 
+/* bulk delete button */
 .btn-delete-selected {
     display: inline-flex;
     align-items: center;
@@ -933,19 +862,19 @@ header {
     font-size: 1.1rem;
 }
 
-/* Dashboard toolbar keeps the user list controls */
+/* action toolbar */
 .dashboard-toolbar {
     align-items: center;
     gap: 18px;
 }
 
-/* Primary add-user action uses the existing purple */
+/* add user button */
 .btn-add-user {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 6px 16px;
-    background-color: #2563eb; /* blue background */
+    background-color: #2563eb;
     color: white;
     border: none;
     border-radius: 8px;
@@ -955,12 +884,13 @@ header {
     transition: all 0.3s ease;
 }
 
-.btn-delete-user{
-     display: inline-flex;
+/* delete user button */
+.btn-delete-user {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 6px 16px;
-    background-color: red; /* blue background */
+    background-color: red;
     color: white;
     border: none;
     border-radius: 8px;
@@ -968,7 +898,6 @@ header {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-
 }
 
 .btn-add-user:hover {
@@ -982,96 +911,90 @@ header {
     font-size: 1rem;
 }
 
-.stats-container{
-    display:flex;
+.stats-container {
+    display: flex;
     flex-direction: row;
-    gap:50px;
-    margin:25px 0;
+    gap: 50px;
+    margin: 25px 0;
 }
 
-/* Dashboard cards share the attendance stat layout */
+/* dashboard stat cards */
 .dashboard-stats .stat-card {
     flex: 1;
     min-width: 210px;
 }
 
-.stat-card{
-    background:white;
-    border-radius:15px;
-    padding:20px;
-    display:flex;
-    align-items:center;
-    gap:20px;
-    box-shadow:0 5px 15px rgba(0,0,0,.08);
-}
-
-.icon{
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:25px;
-    font-weight:bold;
-}
-
-.blue{
-    background:#EEF2FF;
-    color:#4F46E5;
-}
-
-.green{
-    background:#ECFDF5;
-    color:#10B981;
-}
-
-.orange{
-    background:#FFF7ED;
-    color:#F97316;
-}
-
-.red{
-    background:#FEF2F2;
-    color:#EF4444;
-}
-
-.stat-info h4{
-    margin:0;
-    color:#555;
-}
-
-.stat-info h2{
-    margin:8px 0;
-    font-size:32px;
-}
-
-.stat-info small{
-    color:#888;
-}
-
-/* Attendance Table Container Styling */
-.table-container {
-    /* Add top margin to create space between */
-    margin-top: 30px;
-    /* Add padding for internal spacing */
+.stat-card {
+    background: white;
+    border-radius: 15px;
     padding: 20px;
-    /* Set background color to white */
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,.08);
+}
+
+.icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+/* status icon variants */
+.blue {
+    background: #EEF2FF;
+    color: #4F46E5;
+}
+
+.green {
+    background: #ECFDF5;
+    color: #10B981;
+}
+
+.orange {
+    background: #FFF7ED;
+    color: #F97316;
+}
+
+.red {
+    background: #FEF2F2;
+    color: #EF4444;
+}
+
+.stat-info h4 {
+    margin: 0;
+    color: #555;
+}
+
+.stat-info h2 {
+    margin: 8px 0;
+    font-size: 32px;
+}
+
+.stat-info small {
+    color: #888;
+}
+
+/* table section container */
+.table-container {
+    margin-top: 30px;
+    padding: 20px;
     background-color: white;
-    /* Add rounded corners */
     border-radius: 8px;
-    /* Add subtle shadow effect */
     box-shadow: var(--shadow-sm);
-    /* Allow horizontal scrolling on mobile devices */
     overflow-x: auto;
 }
 
-/* Dashboard user list uses the same framed */
 .dashboard-table-container {
     margin-top: 20px;
 }
 
-/* User cell aligns initials, name, and email */
+/* user info cell layout */
 .dashboard-user-cell {
     display: flex;
     align-items: center;
@@ -1079,7 +1002,7 @@ header {
     min-width: 230px;
 }
 
-/* Initials avatar replaces broken placeholder images */
+/* profile avatar fallback */
 .dashboard-avatar {
     width: 42px;
     height: 42px;
@@ -1093,7 +1016,7 @@ header {
     font-weight: 700;
 }
 
-/* Empty state appears before the first intern */
+/* empty table view */
 .dashboard-empty-state {
     min-height: 240px;
     display: grid;
@@ -1127,7 +1050,7 @@ header {
     margin: 0 0 8px;
 }
 
-/* Supervisor registration sits inside the content area */
+/* supervisor registration component */
 .supervisor-registration-form {
     margin-top: 24px;
     padding: 20px;
@@ -1210,7 +1133,6 @@ header {
     background: #f8fafc;
 }
 
-
 .group-section-title h3 {
     margin: 0 0 4px;
     color: var(--text-main);
@@ -1267,7 +1189,7 @@ header {
 .group-card h4 {
     margin: 0 0 4px;
     color: var(--text-main);
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
 }
 
@@ -1310,7 +1232,7 @@ header {
     }
 }
 
-/* Settings content uses two practical panels */
+/* settings layout */
 .settings-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
@@ -1372,83 +1294,64 @@ header {
     width: 100%;
 }
 
-/* Table Styling */
+/* table styles */
 .table {
-    /* Remove margin to avoid extra spacing */
     margin-bottom: 0;
 }
 
-/* Table Header Styling */
+/* table header */
 .table thead {
-    /* Set background color for header row */
     background-color: #f8fafc;
-    /* Add border below header */
     border-bottom: 2px solid var(--border-color);
 }
 
 .table thead th {
-    /* Set text color for header */
     color: var(--text-main);
-    /* Make text bold */
     font-weight: 600;
-    /* Add padding for spacing */
     padding: 15px;
-    /* Remove border between cells */
     border: none;
 }
 
-/* Table Body Row Styling */
+/* table rows */
 .table tbody tr {
-    /* Add transition for smooth hover effect */
     transition: all 0.3s ease;
-    /* Add border between rows */
     border-bottom: 1px solid var(--border-color-muted);
 }
 
-/* Table Body Row Hover Effect */
+/* row hover */
 .table tbody tr:hover {
-    /* Change background color on hover */
     background-color: #f9fafb;
-    /* Slightly lift the row visually */
     transform: translateY(-1px);
 }
 
-/* Table Body Cell Styling */
+/* table cells */
 .table tbody td {
-    /* Add padding for spacing */
     padding: 12px 15px;
-    /* Vertically align content to center */
     vertical-align: middle;
-    /* Remove border */
     border: none;
-    /* Set text color */
     color: var(--text-main);
 }
 
-/* Badge Styling for Status */
+/* status badges */
 .badge {
-    /* Add padding inside badge */
     padding: 6px 12px;
-    /* Make text bold */
     font-weight: 500;
-    /* Set font size */
     font-size: 0.85rem;
 }
 
-/* Status badges can include a lock icon */
 .status-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
 }
 
-/* Lock icon confirms the intern status can */
+/* status lock icon */
 .status-lock-icon {
     font-size: 0.72rem;
     opacity: 0.9;
 }
 
-/* Role badges show whether a saved profile */
+/* user role chip */
 .role-badge {
     display: inline-flex;
     align-items: center;
@@ -1468,7 +1371,7 @@ header {
     color: #047857;
 }
 
-/* Performance score badges show review strength at */
+/* score pill */
 .performance-score {
     display: inline-flex;
     align-items: center;
@@ -1500,55 +1403,81 @@ header {
     color: var(--text-muted);
 }
 
-/* Success Badge (Green - Present) */
+/* badge color themes */
 .badge.bg-success {
-    /* Set green background color */
     background-color: var(--color-success) !important;
-    /* Set white text color */
     color: white;
 }
 
-/* Warning Badge (Orange - Late) */
 .badge.bg-warning {
-    /* Set orange background color */
     background-color: var(--color-warning) !important;
-    /* Set white text color */
     color: white;
 }
 
-/* Danger Badge (Red - Absent) */
 .badge.bg-danger {
-    /* Set red background color */
     background-color: var(--color-danger) !important;
-    /* Set white text color */
     color: white;
 }
 
-/* Info Badge (Blue - Check times) */
 .badge.bg-info {
-    /* Set blue background color */
     background-color: #0ea5e9;
-    /* Set white text color */
     color: white;
 }
 
-/* Action Button Styling */
+/* button sizing & variants */
 .btn-sm {
-    /* Set small button padding */
     padding: 5px 10px;
-    /* Set small font size */
     font-size: 0.875rem;
 }
 
-/* Edit Button Styling */
 .btn-primary {
-    /* Set button background color */
     background-color: var(--primary-color);
-    /* Remove default border */
     border: none;
 }
 
 .btn-primary:hover {
-    /* Change background on hover */
     background-color: var(--primary-hover);
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: -11px;
+    padding: 5px 16px;
+    background-color: #0f172a;
+    color: White;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border: none;
+    height: 35px;
+}
+
+.filter-select {
+    border: none;
+    background-color: #f1f5f9;
+    width: 160px;
+    height: 35px;
+    margin-top: 0.5px;
+    margin-right: 8px;
+    border-radius: 5px;
+    padding: 0 10px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+.filter-search {
+    border: none;
+    background-color: #f1f5f9;
+    width: 250px;
+    height: 34px;
+    margin-top: 0.5px;
 }

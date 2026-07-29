@@ -83,6 +83,17 @@
                         <i class="fas fa-download"></i>
                         <span>Export</span>
                     </button>
+
+                    <select class="filter-select" id="performanceRatingFilter">
+                        <option value="all">All Ratings</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Average">Average</option>
+                        <option value="Needs Improvement">Needs Improvement</option>
+                        <option value="Not reviewed">Not Reviewed</option>
+                    </select>
+                    <input class="filter-search" type="search" id="performanceSearchInput" placeholder="Search by name or department...">
+                    <button class="filter-btn" type="button" onclick="applyPerformanceFilters()">Filter</button>
                 </div>
             </div>
 

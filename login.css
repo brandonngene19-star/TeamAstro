@@ -1,16 +1,15 @@
-
-/* box sizing so layout widths include padding */
+/* reset box sizing */
 * {
     box-sizing: border-box;
 }
 
-/* document height so the login page */
+/* stop page scroll */
 html {
     height: 100%;
     overflow: hidden;
 }
 
-/* colors and shadows for the login design */
+/* color palette & theme stuff */
 :root {
     --ink: #071433;
     --muted: #4b5875;
@@ -24,7 +23,7 @@ html {
     --shadow: 0 22px 55px rgba(18, 37, 87, 0.13);
 }
 
-/* app font */
+/* base body styles */
 body {
     margin: 0;
     height: 100%;
@@ -35,7 +34,7 @@ body {
     background: var(--soft);
 }
 
-/* two-column full-screen login shell */
+/* 2-col layout */
 .login-shell {
     height: 100vh;
     overflow: hidden;
@@ -43,7 +42,7 @@ body {
     grid-template-columns: minmax(0, 0.95fr) minmax(560px, 1fr);
 }
 
-/* left brand and dashboard preview side */
+/* left side preview section */
 .login-showcase {
     position: relative;
     overflow: hidden;
@@ -52,7 +51,7 @@ body {
     background: radial-gradient(circle at 70% 85%, #dfe8ff 0 18%, transparent 45%), linear-gradient(145deg, #ffffff 0%, #f3f6ff 100%);
 }
 
-/* dotted dashboard texture to the left panel */
+/* dot pattern background */
 .login-showcase::after {
     content: "";
     position: absolute;
@@ -64,7 +63,7 @@ body {
     background-size: 18px 18px;
 }
 
-/* inner width of the showcase content */
+/* left side wrapper */
 .showcase-content {
     position: relative;
     z-index: 1;
@@ -73,7 +72,7 @@ body {
     padding: 36px 0;
 }
 
-/* logo icon with the brand text */
+/* logo block */
 .brand-lockup {
     display: flex;
     align-items: center;
@@ -81,7 +80,7 @@ body {
     margin-bottom: 42px;
 }
 
-/* blue icon mark */
+/* logo icon */
 .brand-mark {
     width: 64px;
     height: 64px;
@@ -95,7 +94,6 @@ body {
     box-shadow: 0 16px 30px rgba(79, 99, 255, 0.25);
 }
 
-/* InternFlow wordmark */
 .brand-lockup h1 {
     margin: 0;
     font-size: 2rem;
@@ -104,24 +102,22 @@ body {
     letter-spacing: 0;
 }
 
-/* Flow part of the wordmark */
+/* text accent color */
 .brand-lockup h1 span {
     color: var(--blue);
 }
 
-/* product subtitle */
 .brand-lockup p {
     margin: 8px 0 0;
     color: var(--muted);
     font-size: 1rem;
 }
 
-/* welcome copy narrow and readable */
+/* hero text container */
 .welcome-copy {
     max-width: 600px;
 }
 
-/* large welcome headline */
 .welcome-copy h2 {
     margin: 0 0 22px;
     font-size: clamp(2.5rem, 5vw, 4rem);
@@ -129,7 +125,6 @@ body {
     letter-spacing: 0;
 }
 
-/* welcome paragraph */
 .welcome-copy p {
     max-width: 520px;
     margin: 0;
@@ -138,7 +133,7 @@ body {
     line-height: 1.55;
 }
 
-/* metric preview cards */
+/* stats grid */
 .preview-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(140px, 1fr));
@@ -146,7 +141,7 @@ body {
     margin: 62px 0 54px;
 }
 
-/* preview metric card */
+/* stat card component */
 .preview-stat {
     min-height: 110px;
     display: grid;
@@ -160,7 +155,6 @@ body {
     box-shadow: var(--shadow);
 }
 
-/* round metric icon */
 .stat-icon {
     grid-row: span 2;
     width: 52px;
@@ -172,45 +166,41 @@ body {
     font-size: 1.15rem;
 }
 
-/* metric icon colors */
+/* icon color variants */
 .stat-icon.blue {
     color: #4f63ff;
     background: #e9edff;
 }
 
-/* metric icon colors */
 .stat-icon.green {
     color: #20a67a;
     background: #e5f8ef;
 }
 
-/* metric icon colors */
 .stat-icon.purple {
     color: #7c3aed;
     background: #f0e8ff;
 }
 
-/* large metric number */
 .preview-stat strong {
     align-self: end;
     font-size: 1.55rem;
     line-height: 1;
 }
 
-/* metric label */
 .preview-stat small {
     align-self: start;
     color: var(--muted);
     font-size: 0.88rem;
 }
 
-/* dashboard illustration area */
+/* mockup graphic container */
 .workspace-preview {
     position: relative;
     min-height: 310px;
 }
 
-/* floating cards in the illustration */
+/* floating card UI */
 .mini-card {
     position: absolute;
     z-index: 2;
@@ -221,7 +211,6 @@ body {
     box-shadow: var(--shadow);
 }
 
-/* titles inside mini cards */
 .mini-card span {
     display: block;
     margin-bottom: 12px;
@@ -230,14 +219,14 @@ body {
     font-weight: 600;
 }
 
-/* attendance mini card */
+/* attendance widget */
 .attendance-card {
     left: 0;
     top: 10px;
     width: 190px;
 }
 
-/* CSS donut chart */
+/* CSS-only donut chart */
 .donut-chart {
     width: 64px;
     height: 64px;
@@ -247,7 +236,7 @@ body {
     background: conic-gradient(#47c08a 0 58%, #f3a640 58% 78%, #ee6b6e 78% 100%);
 }
 
-/* donut chart center */
+/* cutout center for donut effect */
 .donut-chart::after {
     content: "";
     display: block;
@@ -258,14 +247,12 @@ body {
     background: #ffffff;
 }
 
-/* attendance legend list */
 .attendance-card ul {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-/* attendance legend rows */
 .attendance-card li {
     display: flex;
     align-items: center;
@@ -275,29 +262,26 @@ body {
     font-size: 0.72rem;
 }
 
-/* small legend dots */
+/* status dot indicator */
 .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
 }
 
-/* present legend color */
 .dot.present {
     background: #47c08a;
 }
 
-/* late legend color */
 .dot.late {
     background: #f3a640;
 }
 
-/* absent legend color */
 .dot.absent {
     background: #ee6b6e;
 }
 
-/* monitor and desk illustration */
+/* desk illustration layout */
 .desk-scene {
     position: absolute;
     left: 22%;
@@ -306,7 +290,7 @@ body {
     height: 310px;
 }
 
-/* seated person shape */
+/* character shape */
 .person {
     position: absolute;
     left: 20%;
@@ -318,7 +302,7 @@ body {
     transform: skewX(-6deg);
 }
 
-/* monitor frame */
+/* monitor illustration */
 .monitor {
     position: absolute;
     left: 40%;
@@ -331,13 +315,12 @@ body {
     box-shadow: 0 18px 28px rgba(8, 25, 64, 0.18);
 }
 
-/* monitor top navigation bar */
 .monitor-bar {
     height: 28px;
     background: #eff3ff;
 }
 
-/* chart line on the monitor */
+/* fake chart line */
 .chart-line {
     width: 118px;
     height: 64px;
@@ -347,7 +330,6 @@ body {
     background: linear-gradient(135deg, transparent 44%, #5268ff 45% 50%, transparent 51%);
 }
 
-/* widgets on the monitor */
 .monitor-widgets {
     position: absolute;
     right: 24px;
@@ -358,7 +340,6 @@ body {
     background: conic-gradient(#5268ff 0 68%, #cdd8f8 68% 100%);
 }
 
-/* desk under the monitor */
 .desk {
     position: absolute;
     left: 10%;
@@ -369,14 +350,13 @@ body {
     background: #63718e;
 }
 
-/* new interns card */
+/* floating intern card */
 .interns-card {
     right: 36px;
     top: 24px;
     width: 190px;
 }
 
-/* avatar row */
 .avatar-row {
     display: flex;
     align-items: center;
@@ -397,20 +377,18 @@ body {
     font-style: normal;
 }
 
-/* plus avatar */
 .avatar-row b {
     border: 2px solid #cbd5f3;
     background: #ffffff;
 }
 
-/* upcoming end dates card */
+/* dates widget */
 .dates-card {
     right: 0;
     bottom: 70px;
     width: 210px;
 }
 
-/* end-date number row */
 .dates-card strong {
     display: flex;
     align-items: center;
@@ -418,12 +396,11 @@ body {
     font-size: 1.25rem;
 }
 
-/* calendar icon in the end-date card */
 .dates-card i {
     color: var(--blue);
 }
 
-/* right dark login panel */
+/* right side dark panel */
 .login-panel {
     position: relative;
     overflow: hidden;
@@ -435,7 +412,7 @@ body {
     background: radial-gradient(circle at 12% 0%, rgba(50, 72, 244, 0.18), transparent 30%), linear-gradient(145deg, #06142e 0%, #020b1d 100%);
 }
 
-/* dotted texture to the login panel */
+/* background pattern */
 .login-panel::before {
     content: "";
     position: absolute;
@@ -445,14 +422,13 @@ body {
     background-size: 24px 24px;
 }
 
-/* decorative blue circles */
+/* glowing background circles */
 .glow-circle {
     position: absolute;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(75, 99, 255, 0.6), rgba(75, 99, 255, 0.06) 68%);
 }
 
-/* top circle */
 .glow-circle.top {
     top: -130px;
     right: -10px;
@@ -460,7 +436,6 @@ body {
     height: 270px;
 }
 
-/* middle circle */
 .glow-circle.middle {
     top: 0;
     right: -135px;
@@ -468,7 +443,6 @@ body {
     height: 330px;
 }
 
-/* bottom circle */
 .glow-circle.bottom {
     right: -120px;
     bottom: -175px;
@@ -476,7 +450,7 @@ body {
     height: 350px;
 }
 
-/* login content above decorative layers */
+/* login form wrapper */
 .login-panel-content {
     position: relative;
     z-index: 1;
@@ -486,12 +460,12 @@ body {
     scrollbar-width: none;
 }
 
-/* internal scrollbar in WebKit browsers while keeping */
+/* hide scrollbar */
 .login-panel-content::-webkit-scrollbar {
     display: none;
 }
 
-/* heading icon and text */
+/* header block */
 .login-heading {
     display: flex;
     align-items: flex-start;
@@ -499,7 +473,6 @@ body {
     margin-bottom: 22px;
 }
 
-/* heading lock badge */
 .login-heading > span {
     width: 58px;
     height: 58px;
@@ -511,7 +484,6 @@ body {
     background: linear-gradient(135deg, #7084ff, #344af5);
 }
 
-/* login heading title */
 .login-heading h2 {
     margin: 4px 0 8px;
     font-size: clamp(1.8rem, 3vw, 2.45rem);
@@ -519,14 +491,13 @@ body {
     letter-spacing: 0;
 }
 
-/* login heading subtitle */
 .login-heading p {
     margin: 0;
     color: rgba(255, 255, 255, 0.84);
     font-size: 1.1rem;
 }
 
-/* short blue underline */
+/* decorative underline line */
 .login-heading div > i {
     display: block;
     width: 64px;
@@ -536,7 +507,7 @@ body {
     background: #6376ff;
 }
 
-/* glass login card */
+/* glassmorphism card */
 .login-card {
     display: grid;
     gap: 16px;
@@ -548,19 +519,18 @@ body {
     backdrop-filter: blur(14px);
 }
 
-/* each label and input */
+/* input field block */
 .login-field {
     display: grid;
     gap: 12px;
 }
 
-/* login field labels */
 .login-field > span {
     font-size: 1rem;
     font-weight: 700;
 }
 
-/* bordered input container */
+/* input field wrapper */
 .input-wrap {
     height: 52px;
     display: flex;
@@ -572,13 +542,11 @@ body {
     background: rgba(7, 20, 51, 0.42);
 }
 
-/* leading icons inside inputs */
 .input-wrap > i {
     color: rgba(222, 231, 255, 0.72);
     font-size: 1.25rem;
 }
 
-/* text inputs */
 .input-wrap input {
     flex: 1;
     min-width: 0;
@@ -589,18 +557,17 @@ body {
     font: inherit;
 }
 
-/* input placeholder text */
 .input-wrap input::placeholder {
     color: rgba(222, 231, 255, 0.56);
 }
 
-/* focused input wrappers in modern browsers */
+/* input focus state */
 .input-wrap:focus-within {
     border-color: #6376ff;
     box-shadow: 0 0 0 4px rgba(99, 118, 255, 0.14);
 }
 
-/* password toggle button */
+/* show/hide pass button */
 .password-toggle {
     border: none;
     color: rgba(222, 231, 255, 0.78);
@@ -609,7 +576,7 @@ body {
     font-size: 1.25rem;
 }
 
-/* remember-me and forgot-password on one row */
+/* remember & forgot pass row */
 .login-options {
     display: flex;
     align-items: center;
@@ -617,7 +584,6 @@ body {
     gap: 20px;
 }
 
-/* checkbox with the remember-me label */
 .login-options label {
     display: inline-flex;
     align-items: center;
@@ -626,14 +592,12 @@ body {
     font-weight: 600;
 }
 
-/* checkbox control */
 .login-options input {
     width: 22px;
     height: 22px;
     accent-color: var(--blue);
 }
 
-/* link-like action buttons */
 .login-options button {
     border: none;
     color: #7284ff;
@@ -643,7 +607,7 @@ body {
     cursor: pointer;
 }
 
-/* login errors without shifting the page too */
+/* error msg styling */
 .login-error {
     min-height: 20px;
     margin: -10px 0 -4px;
@@ -651,7 +615,7 @@ body {
     font-weight: 600;
 }
 
-/* main sign-in button */
+/* submit button */
 .signin-button {
     height: 56px;
     display: inline-flex;
@@ -668,12 +632,11 @@ body {
     box-shadow: 0 16px 34px rgba(53, 75, 246, 0.32);
 }
 
-/* sign-in button */
 .signin-button:hover {
     filter: brightness(1.05);
 }
 
-/* OR divider */
+/* "or" divider line */
 .login-divider {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -682,7 +645,6 @@ body {
     color: rgba(255, 255, 255, 0.68);
 }
 
-/* divider lines */
 .login-divider::before,
 .login-divider::after {
     content: "";
@@ -690,7 +652,7 @@ body {
     background: rgba(174, 194, 232, 0.22);
 }
 
-/* Google button */
+/* google sso button */
 .google-button {
     height: 56px;
     display: inline-flex;
@@ -706,13 +668,13 @@ body {
     cursor: pointer;
 }
 
-/* Google letter mark */
+/* google logo color */
 .google-button b {
     color: #4285f4;
     font-size: 1.65rem;
 }
 
-/* sign-up prompt below the Google button */
+/* bottom signup link */
 .signup-prompt {
     display: flex;
     align-items: center;
@@ -722,7 +684,6 @@ body {
     font-weight: 600;
 }
 
-/* sign-up prompt button as a text action */
 .signup-prompt button {
     border: none;
     color: #8190ff;
@@ -732,7 +693,7 @@ body {
     cursor: pointer;
 }
 
-/* sign-up panel when JavaScript reveals it */
+/* hidden signup form section */
 .signup-panel {
     display: grid;
     gap: 14px;
@@ -740,19 +701,17 @@ body {
     border-top: 1px solid rgba(174, 194, 232, 0.22);
 }
 
-/* sign-up panel hidden until the sign-up button */
 .signup-panel[hidden] {
     display: none;
 }
 
-/* sign-up panel title */
 .signup-panel h3 {
     margin: 0;
     font-size: 1.05rem;
     color: var(--white);
 }
 
-/* create-account button */
+/* register button */
 .signup-button {
     height: 52px;
     display: inline-flex;
@@ -768,12 +727,11 @@ body {
     cursor: pointer;
 }
 
-/* create-account button */
 .signup-button:hover {
     background: rgba(255, 255, 255, 0.16);
 }
 
-/* footer under the card */
+/* footer section */
 .login-footer {
     display: flex;
     align-items: center;
@@ -783,31 +741,27 @@ body {
     color: rgba(255, 255, 255, 0.72);
 }
 
-/* secure login footer block */
 .login-footer div {
     display: flex;
     align-items: flex-start;
     gap: 12px;
 }
 
-/* footer paragraph margins */
 .login-footer p {
     margin: 0;
     line-height: 1.5;
 }
 
-/* footer labels bright */
 .login-footer strong {
     color: var(--white);
 }
 
-/* vertical divider before copyright */
 .login-footer > p {
     padding-left: 48px;
     border-left: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-/* page on tablet and mobile screens */
+/* tablet / mobile layout */
 @media (max-width: 1100px) {
     .login-shell {
         grid-template-columns: 1fr;
@@ -822,7 +776,7 @@ body {
     }
 }
 
-/* compact mobile spacing */
+/* mobile tweaking */
 @media (max-width: 720px) {
     .login-panel,
     .showcase-content {
