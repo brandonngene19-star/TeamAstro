@@ -1039,6 +1039,43 @@ function toggleUserSubmenu(event) {
     submenu.classList.toggle('open');
 }
 
+/* ---- mobile / tablet sidebar (hamburger) ---- */
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.side-bar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar) return;
+
+    const isOpen = sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active', isOpen);
+    document.body.classList.toggle('sidebar-open', isOpen);
+}
+
+function closeSidebar() {
+    const sidebar = document.querySelector('.side-bar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+    document.body.classList.remove('sidebar-open');
+}
+
+// close the sidebar automatically once the viewport is back to desktop size
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) closeSidebar();
+});
+
+// close the sidebar when a nav link inside it is tapped (mobile UX)
+document.addEventListener('click', (event) => {
+    if (window.innerWidth > 1024) return;
+    const sidebar = document.querySelector('.side-bar');
+    if (!sidebar || !sidebar.classList.contains('open')) return;
+
+    const tappedToggle = event.target.closest('#menuToggle');
+    const tappedNavLink = event.target.closest('.side-bar a.nav-link, .side-bar .nav-sublink');
+    if (tappedToggle) return; // toggle button handles itself
+    if (tappedNavLink) return; // let the navigation happen, no need to fight it
+});
+
 function openAddUserModal() {
     const modal = document.getElementById('addUserModal');
     if (!modal) return;
@@ -1226,13 +1263,6 @@ async function editIntern(internId) {
                     value: intern.gender || 'Male',
                     options: ['Male', 'Female']
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: intern.role || 'User',
-                    options: ['User', 'Admin']
-                }
             ]
         });
 
@@ -1264,7 +1294,6 @@ async function editIntern(internId) {
             school: values.school.trim(),
             department: values.department,
             gender: values.gender,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
 
@@ -1492,13 +1521,7 @@ async function editSupervisor(supervisorId) {
                     value: supervisor.department || 'Software Engineering',
                     options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
                 },
-                {
-                    label: 'Role',
-                    name: 'role',
-                    type: 'select',
-                    value: supervisor.role || 'User',
-                    options: ['User', 'Admin']
-                }
+               
             ]
         });
 
@@ -1528,7 +1551,6 @@ async function editSupervisor(supervisorId) {
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
-            role: values.role || 'User',
             updatedAt: new Date().toISOString()
         });
         showAlert('Supervisor updated successfully.', 'success');

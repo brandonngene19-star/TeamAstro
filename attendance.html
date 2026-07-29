@@ -18,6 +18,9 @@
     <header> 
         <div class=" Top-Header">
         <div class=" left-header">
+            <button type="button" class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <span class="material-symbols-outlined brand-icon">school</span>
              <div class="brand-text">
                 <h1 class="brand-title">InternFlow</h1>
@@ -39,6 +42,8 @@
     </div>   
 </header>
 
+
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
         <aside class="side-bar">
         <nav class="side-nav">
@@ -69,7 +74,7 @@
     <main class="main-content">
         <div class="content-header">
             <h2>Attendance Roster</h2>
-        `</div>
+        </div>
             <div class="content-body">
 
                 <div class="row-1">

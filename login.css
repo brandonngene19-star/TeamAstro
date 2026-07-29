@@ -763,16 +763,37 @@ body {
 
 /* tablet / mobile layout */
 @media (max-width: 1100px) {
+    /* the desktop layout locks html/body/.login-shell to a fixed 100vh with
+       overflow hidden, which relies on both columns fitting side by side.
+       once they stack, content can be taller than the viewport, so we need
+       to let the page scroll naturally instead of clipping it. */
+    html,
+    body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+    }
+
     .login-shell {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
         grid-template-columns: 1fr;
     }
 
     .login-showcase {
         min-height: auto;
+        padding: 28px 0;
     }
 
     .login-panel {
-        min-height: 100vh;
+        min-height: auto;
+        padding: 32px 24px;
+    }
+
+    .login-panel-content {
+        max-height: none;
+        overflow-y: visible;
     }
 }
 
@@ -780,7 +801,7 @@ body {
 @media (max-width: 720px) {
     .login-panel,
     .showcase-content {
-        padding: 32px 20px;
+        padding: 28px 18px;
     }
 
     .preview-stats {
@@ -791,12 +812,20 @@ body {
         display: none;
     }
 
+    .brand-lockup {
+        margin-bottom: 26px;
+    }
+
+    .welcome-copy {
+        margin-bottom: 8px;
+    }
+
     .login-heading {
         gap: 16px;
     }
 
     .login-card {
-        padding: 26px;
+        padding: 22px;
     }
 
     .login-options,
@@ -810,3 +839,43 @@ body {
         border-left: none;
     }
 }
+
+/* small phones */
+@media (max-width: 420px) {
+    .login-panel,
+    .showcase-content {
+        padding: 22px 14px;
+    }
+
+    .brand-mark {
+        width: 52px;
+        height: 52px;
+        font-size: 24px;
+    }
+
+    .brand-lockup h1 {
+        font-size: 1.6rem;
+    }
+
+    .login-heading > span {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+    }
+
+    .login-card {
+        padding: 18px;
+        gap: 12px;
+    }
+
+    .input-wrap {
+        height: 48px;
+        padding: 0 14px;
+    }
+
+    .signin-button {
+        height: 50px;
+        font-size: 1.1rem;
+    }
+}
+

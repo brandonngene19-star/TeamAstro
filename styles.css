@@ -415,14 +415,50 @@
     }
 }
 
-/* mobile responsive stuff */
+/* ============================================================
+   RESPONSIVE LAYOUT
+   Desktop  : > 1024px  -> sidebar fixed & visible, as designed
+   Tablet   : <= 1024px -> sidebar becomes an off-canvas drawer
+   Mobile   : <= 768px  -> stacked toolbars/stats, full-width controls
+   Small    : <= 480px  -> tighter spacing/typography for small phones
+   ============================================================ */
+
+/* tablet and below: sidebar becomes a slide-in drawer behind a hamburger */
+@media (max-width: 1024px) {
+    .menu-toggle {
+        display: inline-flex;
+    }
+
+    .side-bar {
+        transform: translateX(-100%);
+        width: 260px;
+        top: 0;
+        height: 100vh;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .side-bar.open {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .middle-header {
+        display: none;
+    }
+}
+
+/* mobile: stack toolbars, stats and make inputs full width */
 @media (max-width: 768px) {
     #alertContainer {
         right: 10px;
         left: 10px;
         width: auto;
     }
-    
+
     .custom-alert {
         width: 100%;
     }
@@ -439,23 +475,154 @@
         width: 100%;
     }
 
+    .add-user-modal {
+        width: 100%;
+        max-height: calc(100vh - 24px);
+    }
+
+    .custom-modal-header {
+        gap: 10px;
+    }
+
     /* stack everything vertically */
+    .row-1,
     .dashboard-toolbar,
     .stats-container {
         flex-direction: column;
         align-items: stretch;
     }
 
+    .stats-container {
+        gap: 14px;
+        margin: 18px 0;
+    }
+
+    .row-1-right {
+        width: 100%;
+    }
+
     .btns {
         flex-wrap: wrap;
     }
 
+    .btns .btn,
+    .row-1-right .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    /* filter bar controls become full width and wrap on their own line */
+    .filter-select,
+    .filter-search {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .filter-btn {
+        width: 100%;
+        margin-left: 0;
+        border-radius: 5px;
+        justify-content: center;
+    }
+
     .dashboard-stats .stat-card {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .settings-grid,
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .content-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .content-body {
+        padding: 18px;
+    }
+
+    .table-container {
+        padding: 14px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-user-cell {
+        min-width: 190px;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .brand-subtitle {
+        display: none;
+    }
+
+    .supervisor-tabs {
         width: 100%;
     }
 
-    .settings-grid {
-        grid-template-columns: 1fr;
+    .supervisor-tab {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* small phones: tighten everything further */
+@media (max-width: 480px) {
+    .material-symbols-outlined.brand-icon {
+        font-size: 24px;
+        margin-left: 4px;
+    }
+
+    .brand-title {
+        font-size: 14px;
+    }
+
+    .main-content {
+        padding: 14px;
+    }
+
+    .content-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .content-body {
+        padding: 14px;
+    }
+
+    .stat-card {
+        padding: 14px;
+        gap: 14px;
+    }
+
+    .icon {
+        width: 46px;
+        height: 46px;
+        font-size: 20px;
+    }
+
+    .stat-info h2 {
+        font-size: 24px;
+    }
+
+    .custom-modal,
+    .add-user-modal {
+        padding: 14px;
+    }
+
+    .table thead th,
+    .table tbody td {
+        padding: 10px;
+        font-size: 0.85rem;
+    }
+
+    .filter-btn,
+    .filter-select,
+    .filter-search {
+        font-size: 0.85rem;
     }
 }
 
@@ -489,6 +656,8 @@ header {
     align-items: stretch;
     padding: 18px 0 20px;
     overflow-y: auto;
+    transition: transform 0.28s ease;
+    z-index: 1000;
 }
 
 .main-content {
@@ -496,8 +665,10 @@ header {
     background-color: var(--bg-body);
     padding: 24px;
     overflow-y: auto;
+    overflow-x: hidden;
     margin-left: 250px;
     margin-top: 0;
+    min-width: 0;
 }
 
 .Top-Header {
@@ -510,6 +681,39 @@ header {
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+/* hamburger button - hidden on desktop, shown at tablet/mobile widths */
+.menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 1.15rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.menu-toggle:hover {
+    background-color: #f1f5f9;
+}
+
+/* dark backdrop shown behind the sidebar on mobile/tablet */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 999;
+}
+
+.sidebar-overlay.active {
+    display: block;
 }
 
 .middle-header {
@@ -788,12 +992,20 @@ header {
 .btns {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
 .row-1 {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.row-1-right {
+    display: flex;
+    flex-wrap: wrap;
 }
 
 /* export button */
@@ -914,7 +1126,8 @@ header {
 .stats-container {
     display: flex;
     flex-direction: row;
-    gap: 50px;
+    flex-wrap: wrap;
+    gap: 24px;
     margin: 25px 0;
 }
 
@@ -1480,4 +1693,32 @@ header {
     width: 250px;
     height: 34px;
     margin-top: 0.5px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+img, video, table {
+  max-width: 100%;
+  height: auto;
 }
