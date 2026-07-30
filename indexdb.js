@@ -1254,7 +1254,8 @@ async function editIntern(internId) {
                     name: 'department',
                     type: 'select',
                     value: intern.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    options: ['SOFTWWARE ENGINEERING','COMPUTER SCIENCE AND NETWORKS','QUALITY ASSURANCE','ACCOUNTING','DRIVING SCHOOL','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','OFFICE AUTOMATION']
+
                 },
                 {
                     label: 'Gender',
@@ -1799,9 +1800,6 @@ async function handleCreateGroupSubmit(event) {
     const supervisorId = Number(document.getElementById('groupSupervisor')?.value) || '';
     const internIds = Array.from(document.querySelectorAll('[data-group-intern-list] input:checked'))
         .map(input => Number(input.value));
-    const supervisorIds = Array.from(document.querySelectorAll('[data-group-supervisor-list] input:checked'))
-        .map(input => Number(input.value));
-    
 
     if (!name) {
         showAlert('Group name is required.', 'warning');
@@ -1809,18 +1807,6 @@ async function handleCreateGroupSubmit(event) {
     }
     if (internIds.length === 0) {
         showAlert('Select at least one intern for the group.', 'warning');
-        return;
-    }
-    if(internIds.length <= 3){
-        showAlert('Each group needs atleast 3 interns.', 'warning');
-        return;
-    }
-    if(internIds.length >= 5){
-        showAlert('Each group needs at most 5 interns.', 'warning');
-        return;
-    }
-    if (supervisorIds.length === 0) {
-        showAlert('Assign a Supervisor for the group.', 'warning');
         return;
     }
 
