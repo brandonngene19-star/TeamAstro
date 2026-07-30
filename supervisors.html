@@ -154,10 +154,15 @@
                                 <p class="text-muted">Loading interns...</p>
                             </div>
                         </div>
-                        <button class="btn btn-add-user" type="submit">
-                            <i class="fas fa-plus"></i>
-                            <span>Create Group</span>
-                        </button>
+                        <div class="group-form-actions">
+                            <button class="btn btn-add-user" type="submit" id="groupFormSubmitBtn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Group</span>
+                            </button>
+                            <button class="btn btn-cancel-edit" type="button" id="groupFormCancelBtn" onclick="cancelGroupEdit()" hidden>
+                                <span>Cancel Edit</span>
+                            </button>
+                        </div>
                     </form>
 
                     <div class="group-list-panel">
