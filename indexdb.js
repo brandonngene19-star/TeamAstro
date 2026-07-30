@@ -1519,10 +1519,10 @@ async function editSupervisor(supervisorId) {
                     label: 'Department',
                     name: 'department',
                     type: 'select',
-                    value: supervisor.department || 'Software Engineering',
-                    options: ['Software Engineering', 'Computer Science and Networks', 'Quality Assurance']
+                    value: supervisor.department ||'software Engineering',
+                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE and NETWORKS', 'QUALITY ASSURANCE','ACCOUNTING','DRIVING SCHOOL','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','OFFICE OUTOMATION']    
                 },
-               
+                
             ]
         });
 
