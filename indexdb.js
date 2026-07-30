@@ -1,6 +1,7 @@
 let db;
+let editingGroupId = null;
 const DB_NAME = 'InternFlowDB';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 const NAME_REGEX = /^[a-zA-Z\s]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1729,6 +1730,9 @@ async function removeGroup(groupId) {
             })));
 
         await deleteGroup(groupId);
+        if (editingGroupId === groupId) {
+            cancelGroupEdit();
+        }
         showAlert('Group deleted successfully.', 'success');
         await loadSupervisorsPage();
         await loadGroupTools();
@@ -1798,16 +1802,74 @@ async function loadGroupTools() {
                     <div class="group-members">
                         ${groupInternIds.map(internId => `<span>${escapeHTML(internMap[internId] || 'Unknown intern')}</span>`).join('')}
                     </div>
-                    <button class="btn btn-delete-user" type="button" onclick="removeGroup(${group.id})">
-                        <i class="fas fa-trash"></i>
-                        <span>Delete</span>
-                    </button>
+                    <div class="group-card-actions">
+                        <button class="btn btn-edit-group" type="button" onclick="editGroup(${group.id})">
+                            <i class="fas fa-pen"></i>
+                            <span>Edit</span>
+                        </button>
+                        <button class="btn btn-delete-user" type="button" onclick="removeGroup(${group.id})">
+                            <i class="fas fa-trash"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                 </div>
             `;
             }).join('');
     } catch (error) {
         showAlert('Error loading group tools: ' + error, 'error');
     }
+}
+
+async function editGroup(groupId) {
+    try {
+        const group = await getGroupById(groupId);
+        if (!group) {
+            showAlert('Group record was not found.', 'warning');
+            return;
+        }
+
+        showSupervisorTab('groups');
+        await loadGroupTools();
+
+        editingGroupId = group.id;
+
+        const nameInput = document.getElementById('groupName');
+        const supervisorSelect = document.getElementById('groupSupervisor');
+        const internCheckboxes = document.querySelectorAll('[data-group-intern-list] input[type="checkbox"]');
+
+        if (nameInput) nameInput.value = group.name || '';
+        if (supervisorSelect) supervisorSelect.value = group.supervisorId || '';
+
+        const groupInternIds = (group.internIds || []).map(Number);
+        internCheckboxes.forEach(checkbox => {
+            checkbox.checked = groupInternIds.includes(Number(checkbox.value));
+        });
+
+        const submitBtn = document.getElementById('groupFormSubmitBtn');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-save"></i><span>Update Group</span>';
+        }
+        const cancelBtn = document.getElementById('groupFormCancelBtn');
+        if (cancelBtn) cancelBtn.hidden = false;
+
+        document.querySelector('.group-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+        showAlert('Error loading group for edit: ' + error, 'error');
+    }
+}
+
+function cancelGroupEdit() {
+    editingGroupId = null;
+
+    const form = document.querySelector('.group-form');
+    if (form) form.reset();
+
+    const submitBtn = document.getElementById('groupFormSubmitBtn');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i><span>Create Group</span>';
+    }
+    const cancelBtn = document.getElementById('groupFormCancelBtn');
+    if (cancelBtn) cancelBtn.hidden = true;
 }
 
 async function handleCreateGroupSubmit(event) {
@@ -1826,39 +1888,98 @@ async function handleCreateGroupSubmit(event) {
         showAlert('Select at least one intern for the group.', 'warning');
         return;
     }
+    if (internIds.length < 3 ) {
+        showAlert('Select at least three interns for the group.', 'warning');
+        return;
+    }
+    if (internIds.length > 5 ) {
+        showAlert('Select at most five interns for the group.', 'warning');
+        return;
+    }
+
 
     try {
         const supervisors = await getAllSupervisors();
         const supervisor = supervisors.find(item => item.id === supervisorId);
 
-        await addGroup({
-            id: Date.now(),
-            name,
-            supervisorId,
-            internIds,
-            dateAdded: new Date().toISOString()
-        });
+        if (editingGroupId) {
+            const existingGroup = await getGroupById(editingGroupId);
+            if (!existingGroup) {
+                showAlert('Group record was not found.', 'warning');
+                editingGroupId = null;
+                return;
+            }
 
-        if (supervisor) {
-            await Promise.all(internIds.map(async (internId) => {
+            const previousInternIds = existingGroup.internIds || [];
+            const removedInternIds = previousInternIds.filter(id => !internIds.includes(id));
+
+            await Promise.all(removedInternIds.map(async (internId) => {
                 const intern = await getInternById(internId);
                 if (!intern) return;
                 await updateIntern({
                     ...intern,
-                    supervisorId: supervisor.id,
-                    supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
-                    groupName: name,
+                    supervisorId: null,
+                    supervisorName: '',
+                    groupName: '',
                     updatedAt: new Date().toISOString()
                 });
             }));
+
+            await updateGroup({
+                ...existingGroup,
+                name,
+                supervisorId,
+                internIds,
+                updatedAt: new Date().toISOString()
+            });
+
+            if (supervisor) {
+                await Promise.all(internIds.map(async (internId) => {
+                    const intern = await getInternById(internId);
+                    if (!intern) return;
+                    await updateIntern({
+                        ...intern,
+                        supervisorId: supervisor.id,
+                        supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
+                        groupName: name,
+                        updatedAt: new Date().toISOString()
+                    });
+                }));
+            }
+
+            cancelGroupEdit();
+            showAlert('Group updated successfully.', 'success');
+        } else {
+            await addGroup({
+                id: Date.now(),
+                name,
+                supervisorId,
+                internIds,
+                dateAdded: new Date().toISOString()
+            });
+
+            if (supervisor) {
+                await Promise.all(internIds.map(async (internId) => {
+                    const intern = await getInternById(internId);
+                    if (!intern) return;
+                    await updateIntern({
+                        ...intern,
+                        supervisorId: supervisor.id,
+                        supervisorName: `${supervisor.firstName} ${supervisor.lastName}`,
+                        groupName: name,
+                        updatedAt: new Date().toISOString()
+                    });
+                }));
+            }
+
+            event.target.reset();
+            showAlert('Group created successfully.', 'success');
         }
 
-        event.target.reset();
-        showAlert('Group created successfully.', 'success');
         await loadSupervisorsPage();
         await loadGroupTools();
     } catch (error) {
-        showAlert('Error creating group: ' + error, 'error');
+        showAlert('Error saving group: ' + error, 'error');
     }
 }
 
@@ -2379,3 +2500,4 @@ function logoutAdmin() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     window.location.href = 'login.html';
 }
+
