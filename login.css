@@ -1,13 +1,5 @@
 /* reset box sizing */
-* {
-    box-sizing: border-box;
-}
 
-/* stop page scroll */
-html {
-    height: 100%;
-    overflow: hidden;
-}
 
 /* color palette & theme stuff */
 :root {
@@ -25,9 +17,6 @@ html {
 
 /* base body styles */
 body {
-    margin: 0;
-    height: 100%;
-    min-height: 100vh;
     overflow: hidden;
     font-family: "Inter", Arial, sans-serif;
     color: var(--ink);
@@ -35,379 +24,16 @@ body {
 }
 
 /* 2-col layout */
-.login-shell {
-    height: 100vh;
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(560px, 1fr);
-}
 
-/* left side preview section */
-.login-showcase {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    background: radial-gradient(circle at 70% 85%, #dfe8ff 0 18%, transparent 45%), linear-gradient(145deg, #ffffff 0%, #f3f6ff 100%);
-}
 
-/* dot pattern background */
-.login-showcase::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 auto;
-    width: 360px;
-    height: 280px;
-    opacity: 0.45;
-    background-image: radial-gradient(#9fb2f4 1px, transparent 1px);
-    background-size: 18px 18px;
-}
-
-/* left side wrapper */
-.showcase-content {
-    position: relative;
-    z-index: 1;
-    width: min(82%, 720px);
-    margin: 0 auto;
-    padding: 36px 0;
-}
-
-/* logo block */
-.brand-lockup {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 42px;
-}
-
-/* logo icon */
-.brand-mark {
-    width: 64px;
-    height: 64px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 18px;
-    color: var(--white);
-    font-size: 30px;
-    background: linear-gradient(135deg, #6f82ff, #3248f4);
-    box-shadow: 0 16px 30px rgba(79, 99, 255, 0.25);
-}
-
-.brand-lockup h1 {
-    margin: 0;
-    font-size: 2rem;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: 0;
-}
-
-/* text accent color */
-.brand-lockup h1 span {
-    color: var(--blue);
-}
-
-.brand-lockup p {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 1rem;
-}
-
-/* hero text container */
-.welcome-copy {
-    max-width: 600px;
-}
-
-.welcome-copy h2 {
-    margin: 0 0 22px;
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 800;
-    letter-spacing: 0;
-}
-
-.welcome-copy p {
-    max-width: 520px;
-    margin: 0;
-    color: #384766;
-    font-size: 1.2rem;
-    line-height: 1.55;
-}
-
-/* stats grid */
-.preview-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(140px, 1fr));
-    gap: 22px;
-    margin: 62px 0 54px;
-}
-
-/* stat card component */
-.preview-stat {
-    min-height: 110px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 8px 14px;
-    padding: 18px;
-    border: 1px solid #e3e8f5;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: var(--shadow);
-}
-
-.stat-icon {
-    grid-row: span 2;
-    width: 52px;
-    height: 52px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 1.15rem;
-}
-
-/* icon color variants */
-.stat-icon.blue {
-    color: #4f63ff;
-    background: #e9edff;
-}
-
-.stat-icon.green {
-    color: #20a67a;
-    background: #e5f8ef;
-}
-
-.stat-icon.purple {
-    color: #7c3aed;
-    background: #f0e8ff;
-}
-
-.preview-stat strong {
-    align-self: end;
-    font-size: 1.55rem;
-    line-height: 1;
-}
-
-.preview-stat small {
-    align-self: start;
-    color: var(--muted);
-    font-size: 0.88rem;
-}
-
-/* mockup graphic container */
-.workspace-preview {
-    position: relative;
-    min-height: 310px;
-}
-
-/* floating card UI */
-.mini-card {
-    position: absolute;
-    z-index: 2;
-    padding: 16px;
-    border: 1px solid #e5eaf6;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: var(--shadow);
-}
-
-.mini-card span {
-    display: block;
-    margin-bottom: 12px;
-    color: #26334f;
-    font-size: 0.86rem;
-    font-weight: 600;
-}
-
-/* attendance widget */
-.attendance-card {
-    left: 0;
-    top: 10px;
-    width: 190px;
-}
-
-/* CSS-only donut chart */
-.donut-chart {
-    width: 64px;
-    height: 64px;
-    float: left;
-    margin-right: 16px;
-    border-radius: 50%;
-    background: conic-gradient(#47c08a 0 58%, #f3a640 58% 78%, #ee6b6e 78% 100%);
-}
-
-/* cutout center for donut effect */
-.donut-chart::after {
-    content: "";
-    display: block;
-    width: 38px;
-    height: 38px;
-    margin: 13px;
-    border-radius: 50%;
-    background: #ffffff;
-}
-
-.attendance-card ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.attendance-card li {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin-bottom: 5px;
-    color: #56617a;
-    font-size: 0.72rem;
-}
-
-/* status dot indicator */
-.dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-}
-
-.dot.present {
-    background: #47c08a;
-}
-
-.dot.late {
-    background: #f3a640;
-}
-
-.dot.absent {
-    background: #ee6b6e;
-}
-
-/* desk illustration layout */
-.desk-scene {
-    position: absolute;
-    left: 22%;
-    right: 14%;
-    bottom: 0;
-    height: 310px;
-}
-
-/* character shape */
-.person {
-    position: absolute;
-    left: 20%;
-    bottom: 38px;
-    width: 135px;
-    height: 210px;
-    border-radius: 65px 65px 24px 24px;
-    background: linear-gradient(145deg, #4465ff 0 48%, #071433 49% 100%);
-    transform: skewX(-6deg);
-}
-
-/* monitor illustration */
-.monitor {
-    position: absolute;
-    left: 40%;
-    bottom: 80px;
-    width: 260px;
-    height: 162px;
-    border: 9px solid #10204a;
-    border-radius: 8px;
-    background: #f8fbff;
-    box-shadow: 0 18px 28px rgba(8, 25, 64, 0.18);
-}
-
-.monitor-bar {
-    height: 28px;
-    background: #eff3ff;
-}
-
-/* fake chart line */
-.chart-line {
-    width: 118px;
-    height: 64px;
-    margin: 26px 0 0 32px;
-    border-left: 3px solid #cdd8f8;
-    border-bottom: 3px solid #cdd8f8;
-    background: linear-gradient(135deg, transparent 44%, #5268ff 45% 50%, transparent 51%);
-}
-
-.monitor-widgets {
-    position: absolute;
-    right: 24px;
-    top: 56px;
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    background: conic-gradient(#5268ff 0 68%, #cdd8f8 68% 100%);
-}
-
-.desk {
-    position: absolute;
-    left: 10%;
-    right: 0;
-    bottom: 54px;
-    height: 12px;
-    border-radius: 999px;
-    background: #63718e;
-}
-
-/* floating intern card */
-.interns-card {
-    right: 36px;
-    top: 24px;
-    width: 190px;
-}
-
-.avatar-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* avatar circles */
-.avatar-row i,
-.avatar-row b {
-    width: 34px;
-    height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ffd6ad, #5268ff);
-    color: #5268ff;
-    font-style: normal;
-}
-
-.avatar-row b {
-    border: 2px solid #cbd5f3;
-    background: #ffffff;
-}
-
-/* dates widget */
-.dates-card {
-    right: 0;
-    bottom: 70px;
-    width: 210px;
-}
-
-.dates-card strong {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 1.25rem;
-}
-
-.dates-card i {
-    color: var(--blue);
-}
 
 /* right side dark panel */
 .login-panel {
-    position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 28px 48px;
+    height: 750px;
     color: var(--white);
     background: radial-gradient(circle at 12% 0%, rgba(50, 72, 244, 0.18), transparent 30%), linear-gradient(145deg, #06142e 0%, #020b1d 100%);
 }
@@ -419,36 +45,10 @@ body {
     inset: 0;
     opacity: 0.28;
     background-image: radial-gradient(#2b5cff 1px, transparent 1px);
-    background-size: 24px 24px;
 }
 
-/* glowing background circles */
-.glow-circle {
-    position: absolute;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(75, 99, 255, 0.6), rgba(75, 99, 255, 0.06) 68%);
-}
 
-.glow-circle.top {
-    top: -130px;
-    right: -10px;
-    width: 270px;
-    height: 270px;
-}
 
-.glow-circle.middle {
-    top: 0;
-    right: -135px;
-    width: 330px;
-    height: 330px;
-}
-
-.glow-circle.bottom {
-    right: -120px;
-    bottom: -175px;
-    width: 350px;
-    height: 350px;
-}
 
 /* login form wrapper */
 .login-panel-content {
@@ -705,31 +305,6 @@ body {
     display: none;
 }
 
-.signup-panel h3 {
-    margin: 0;
-    font-size: 1.05rem;
-    color: var(--white);
-}
-
-/* register button */
-.signup-button {
-    height: 52px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    border: 1px solid rgba(174, 194, 232, 0.34);
-    border-radius: 8px;
-    color: var(--white);
-    background: rgba(255, 255, 255, 0.1);
-    font-size: 1rem;
-    font-weight: 800;
-    cursor: pointer;
-}
-
-.signup-button:hover {
-    background: rgba(255, 255, 255, 0.16);
-}
 
 /* footer section */
 .login-footer {
