@@ -645,12 +645,18 @@ function handleFormSubmit(event, formType) {
     } else if (formType === 'supervisor') {
         const firstName = document.getElementById('supervisorFirstName')?.value.trim();
         const lastName = document.getElementById('supervisorLastName')?.value.trim();
+        const gender = document.getElementById('supervisorGender')?.value;
         const email = document.getElementById('supervisorEmail')?.value.trim();
         const phone = document.getElementById('supervisorPhone')?.value.trim();
         const department = document.getElementById('supervisorDepartment')?.value;
+        
 
-        if (!firstName || !lastName || !email || !phone || !department) {
+        if (!firstName || !lastName || !email || !phone || !department || !gender) {
             showAlert('Please fill all supervisor registration fields.', 'warning');
+            return;
+        }
+        if (gender === '') {
+            showAlert('Gender is required!', 'warning');
             return;
         }
 
@@ -679,6 +685,7 @@ function handleFormSubmit(event, formType) {
                 id: Date.now(),
                 firstName,
                 lastName,
+                gender,
                 email,
                 phone,
                 department,
@@ -1455,6 +1462,7 @@ async function loadSupervisorsPage() {
                         </div>
                     </div>
                 </td>
+                <td>${escapeHTML(supervisor.gender)}</td>
                 <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
@@ -1480,8 +1488,9 @@ async function loadSupervisorsPage() {
                 <thead class="table-light">
                     <tr>
                         <th>Supervisor</th>
-                        <th>Department</th>
+                        <th>Gender</th>
                         <th>Phone</th>
+                        <th>Department</th>
                         <th>Interns</th>
                         <th>Date Added</th>
                         <th>Action</th>
@@ -1515,6 +1524,13 @@ async function editSupervisor(supervisorId) {
                 { label: 'Last name', name: 'lastName', value: supervisor.lastName || '' },
                 { label: 'Email', name: 'email', value: supervisor.email || '' },
                 { label: 'Phone', name: 'phone', value: supervisor.phone || '' },
+                { label: 'Gender',
+                  name: 'gender',
+                    type: 'select',
+                    value: supervisor.gender ||'choose..',
+                    options: ['Male', 'Female']
+
+                },
                 {
                     label: 'Department',
                     name: 'department',
@@ -1549,6 +1565,7 @@ async function editSupervisor(supervisorId) {
             ...supervisor,
             firstName: values.firstName.trim(),
             lastName: values.lastName.trim(),
+            gender: values.gender,
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
