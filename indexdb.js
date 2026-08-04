@@ -427,28 +427,6 @@ function getAttendanceById(id) {
     return dbGet('attendance', id);
 }
 
-async function updateAttendance(record) {
-    const existingRecord = await getAttendanceById(record.id);
-    if (existingRecord?.statusLockedAt && existingRecord.status !== record.status) {
-        throw new Error('Attendance status has already been set and cannot be modified.');
-    }
-
-    if (existingRecord?.checkInTime && existingRecord.checkInTime !== record.checkInTime) {
-        throw new Error('Check-in time has already been set and cannot be modified.');
-    }
-
-    if (existingRecord?.checkOutTime && existingRecord.checkOutTime !== record.checkOutTime) {
-        throw new Error('Check-out time has already been set and cannot be modified.');
-    }
-
-    const recordToSave = {
-        ...record,
-        statusLockedAt: existingRecord?.statusLockedAt || record.statusLockedAt || new Date().toISOString()
-    };
-
-    return dbPut('attendance', recordToSave);
-}
-
 function addPerformance(record) {
     return dbAdd('performance', record);
 }
@@ -517,7 +495,12 @@ function exportToCSV(storeName) {
             } else if (storeName === 'supervisors') {
                 data = await getAllSupervisors();
             } else if (storeName === 'attendance') {
-                data = await getAllAttendance();
+                const allAttendance = await getAllAttendance();
+                const latestByIntern = {};
+                allAttendance.forEach(record => {
+                    latestByIntern[record.internId] = record;
+                });
+                data = Object.values(latestByIntern);
             } else if (storeName === 'performance') {
                 data = await getAllPerformance();
             }
@@ -527,11 +510,17 @@ function exportToCSV(storeName) {
                 return;
             }
 
-            const keys = Object.keys(data[0]);
-            let csv = keys.map(escapeCSVValue).join(',') + '\n';
+            const ID_FIELDS = new Set(['id', 'internId', 'internId_code', 'supervisorId']);
+           
+            const EXCLUDED_FIELDS = {
+                attendance: new Set(['remarks'])
+            };
+            const excluded = EXCLUDED_FIELDS[storeName] || new Set();
+            const keys = Object.keys(data[0]).filter(key => !ID_FIELDS.has(key) && !excluded.has(key));
+            let csv = ['No.', ...keys].map(escapeCSVValue).join(',') + '\n';
 
-            data.forEach(item => {
-                const values = keys.map(key => escapeCSVValue(item[key]));
+            data.forEach((item, index) => {
+                const values = [index + 1, ...keys.map(key => escapeCSVValue(item[key]))];
                 csv += values.join(',') + '\n';
             });
 
@@ -747,8 +736,7 @@ function createAttendanceRecordForNewIntern(intern) {
         date: today,
         checkInTime: null,
         checkOutTime: null,
-        status: 'Absent',
-        remarks: '',
+        status: '-',
         createdAt: new Date().toISOString()
     };
     
@@ -809,7 +797,7 @@ async function loadAttendanceTable() {
         const searchTerm = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
 
         const filteredInterns = allInterns.filter(intern => {
-            const attendance = attendanceMap[intern.id] || { status: 'Absent' };
+            const attendance = attendanceMap[intern.id] || { status: '-' };
             const matchesStatus = statusFilter === 'all' || attendance.status === statusFilter;
             const fullName = `${intern.firstName} ${intern.lastName}`.toLowerCase();
             const matchesSearch = !searchTerm ||
@@ -828,28 +816,34 @@ async function loadAttendanceTable() {
                         <th style="width: 12%">Check In</th>
                         <th style="width: 12%">Check Out</th>
                         <th style="width: 10%">Status</th>
-                        <th style="width: 15%">Remarks</th>
-                        <th style="width: 4%">Action</th>
+                        <th style="width: 31%">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
-        
+
+        const windowClosed = isAttendanceWindowClosed();
+
         filteredInterns.forEach(intern => {
             const attendance = attendanceMap[intern.id] || {
-                checkInTime: '-',
-                checkOutTime: '-',
-                status: 'Absent',
-                remarks: ''
+                checkInTime: '',
+                checkOutTime: '',
+                status: '-',
             };
             
-            const statusColor = attendance.status === 'Present' ? 'success' : 
-                                attendance.status === 'Late' ? 'warning' : 'danger';
+            const statusColor = attendance.status === 'Present' ? 'secondary' :
+                                attendance.status === 'Late' ? 'secondary' :
+                                attendance.status === 'Absent' ? 'danger' : 'secondary';
             
             const statusLockIcon = attendance.statusLockedAt ? '<i class="fas fa-lock status-lock-icon" title="Status locked"></i>' : '';
 
             const statusBadge = `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}</span>`;
-            
+
+            const hasCheckedIn = Boolean(attendance.checkInTime);
+            const hasCheckedOut = Boolean(attendance.checkOutTime);
+            const checkInDisabled = windowClosed || hasCheckedIn;
+            const checkOutDisabled = windowClosed || !hasCheckedIn || hasCheckedOut;
+
             tableHTML += `
                 <tr>
                     <td><input type="checkbox" class="form-check-input intern-select" value="${intern.id}"></td>
@@ -858,16 +852,20 @@ async function loadAttendanceTable() {
                             <span class="dashboard-avatar me-2">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
                             <div>
                                 <div class="fw-bold">${intern.firstName} ${intern.lastName}</div>
-                                <small class="text-muted">${intern.email}</small>
+                                
                             </div>
                         </div>
                     </td>
                     <td>${intern.department}</td>
-                    <td><span class="badge bg-success">${attendance.checkInTime || '-'}</span></td>
-                    <td><span class="badge bg-info">${attendance.checkOutTime || '-'}</span></td>
+                    <td><span class="btn-light">${attendance.checkInTime || '-'}</span></td>
+                    <td><span class="btn-light">${attendance.checkOutTime || '-'}</span></td>
                     <td>${statusBadge}</td>
-                    <td><small>${attendance.remarks || '-'}</small></td>
-                    <td><button class="btn btn-sm btn-primary" onclick="editAttendance(${intern.id})"><i class="fas fa-edit"></i></button></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
+                            <button class="btn btn-sm btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         });
@@ -1464,8 +1462,8 @@ async function loadSupervisorsPage() {
                     </div>
                 </td>
                 <td>${escapeHTML(supervisor.gender)}</td>
-                <td>${escapeHTML(supervisor.department)}</td>
                 <td>${escapeHTML(supervisor.phone)}</td>
+                <td>${escapeHTML(supervisor.department)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
@@ -1983,6 +1981,24 @@ async function handleCreateGroupSubmit(event) {
     }
 }
 
+function renderFeedbackCell(remarks) {
+    const text = (remarks || '').trim();
+    if (!text) return '-';
+
+    const words = text.split(/\s+/);
+    const preview = words.slice(0, 3).join(' ');
+    const isTruncated = words.length > 3;
+
+    if (!isTruncated) return escapeHTML(text);
+
+    const previewLabel = `${escapeHTML(preview)}...`;
+    const full = escapeHTML(text);
+
+    // Pure CSS tooltip (no bootstrap.js dependency): the full text sits in
+    // a hidden ::after-positioned bubble that only appears on hover/focus.
+    return `<span class="feedback-preview" tabindex="0" data-tooltip="${full}">${previewLabel}</span>`;
+}
+
 function getPerformanceScoreClass(score) {
     if (score >= 80) return 'excellent';
     if (score >= 60) return 'good';
@@ -2068,16 +2084,15 @@ async function loadPerformancePage() {
                     <td>
                         <div class="dashboard-user-cell">
                             <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
-                            <div>
-                                <div class="fw-bold">${escapeHTML(intern.firstName)} ${escapeHTML(intern.lastName)}</div>
-                                <small class="text-muted">${escapeHTML(intern.email)}</small>
-                            </div>
+                            <div class="fw-bold">${escapeHTML(intern.firstName)} ${escapeHTML(intern.lastName)}</div>
                         </div>
                     </td>
                     <td>${escapeHTML(intern.department)}</td>
-                    <td><span class="performance-score ${performance ? getPerformanceScoreClass(score) : 'pending'}">${escapeHTML(scoreLabel)}</span></td>
+                    <td>
+                        <span class="performance-score ${performance ? getPerformanceScoreClass(score) : 'pending'}">${escapeHTML(scoreLabel)}</span>
+                    </td>
                     <td>${escapeHTML(performance?.rating || 'Not reviewed')}</td>
-                    <td>${escapeHTML(performance?.remarks || '-')}</td>
+                    <td>${renderFeedbackCell(performance?.remarks)}</td>
                     <td>${escapeHTML(formatDashboardDate(performance?.updatedAt || performance?.createdAt))}</td>
                     <td><button class="btn btn-sm btn-primary" onclick="editPerformance(${intern.id})"><i class="fas fa-pen"></i></button></td>
                 </tr>
@@ -2126,17 +2141,25 @@ async function editPerformance(internId) {
             createdAt: new Date().toISOString()
         };
 
+        const MAX_TYPE_SCORE = 25;
+        const PERFORMANCE_TYPES = [
+            { key: 'teamWork', label: 'Team Work' },
+            { key: 'punctuality', label: 'Punctuality' },
+            { key: 'individualEfforts', label: 'Individual Efforts' },
+            { key: 'behavior', label: 'Behavior' }
+        ];
+
         const values = await showCustomModal({
             title: 'Update Performance',
             message: intern ? `${intern.firstName} ${intern.lastName}` : 'Intern performance review',
             confirmText: 'Save Review',
             fields: [
-                {
-                    label: 'Score',
-                    name: 'score',
-                    value: performanceRecord.score || '',
-                    placeholder: '0 - 100'
-                },
+                ...PERFORMANCE_TYPES.map(type => ({
+                    label: `${type.label} (max ${MAX_TYPE_SCORE})`,
+                    name: type.key,
+                    value: performanceRecord[type.key] ?? '',
+                    placeholder: `0 - ${MAX_TYPE_SCORE}`
+                })),
                 {
                     label: 'Rating',
                     name: 'rating',
@@ -2155,17 +2178,27 @@ async function editPerformance(internId) {
 
         if (!values) return;
 
-        const score = Number(values.score);
-        if (!Number.isFinite(score) || score < 0 || score > 100) {
-            showAlert('Performance score must be between 0 and 100.', 'warning');
-            return;
+        const typeScores = {};
+        for (const type of PERFORMANCE_TYPES) {
+            const typeScore = Number(values[type.key]);
+            if (!Number.isFinite(typeScore) || typeScore < 0 || typeScore > MAX_TYPE_SCORE) {
+                showAlert(`${type.label} score must be between 0 and ${MAX_TYPE_SCORE}.`, 'warning');
+                return;
+            }
+            typeScores[type.key] = typeScore;
         }
+
+        // Each type is capped at 25, so the four together add up to a 0-100 overall score.
+        const score = Math.round(
+            PERFORMANCE_TYPES.reduce((total, type) => total + typeScores[type.key], 0)
+        );
 
         const recordToSave = {
             ...performanceRecord,
             internId,
             internName: intern ? `${intern.firstName} ${intern.lastName}` : performanceRecord.internName,
             department: intern?.department || performanceRecord.department,
+            ...typeScores,
             score,
             rating: values.rating,
             remarks: (values.remarks) || '',
@@ -2235,105 +2268,119 @@ async function saveSettingsForm(event) {
     }
 }
 
-async function editAttendance(internId) {
+// Attendance window used to auto-determine status from the exact check-in time:
+//   before 7:00 AM        -> Present
+//   7:00 AM - 1:24 PM     -> Late
+//   1:25 PM onward        -> Absent
+function determineAttendanceStatus(date) {
+    const totalMinutes = date.getHours() * 60 + date.getMinutes();
+    const presentCutoff = 7 * 60;        // 7:00 AM
+    const absentCutoff = 13 * 60 + 25;   // 1:25 PM
+
+    if (totalMinutes < presentCutoff) {
+        return 'Present';
+    } else if (totalMinutes < absentCutoff) {
+        return 'Late';
+    }
+    return 'Absent';
+}
+
+// Check-in/out is disabled from 5:00 PM onward.
+function isAttendanceWindowClosed(date = new Date()) {
+    return date.getHours() >= 17;
+}
+
+function formatExactTime(date = new Date()) {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+async function checkInAttendance(internId) {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        if (isAttendanceWindowClosed(now)) {
+            showAlert('Check-in is disabled after 5:00 PM.', 'warning');
+            return;
+        }
+
+        const today = now.toISOString().split('T')[0];
         const intern = await getInternById(internId);
         const existingRecords = await getAttendanceByInternId(internId);
-        const attendanceRecord = existingRecords.find(record => record.date === today) ||
-                                 existingRecords[existingRecords.length - 1] ||
-                                 {
-                                     id: Date.now(),
-                                     internId: internId,
-                                     internName: intern ? `${intern.firstName} ${intern.lastName}` : '',
-                                     internId_code: intern ? intern.internId : '',
-                                     email: intern ? intern.email : '',
-                                     department: intern ? intern.department : '',
-                                     date: today,
-                                     createdAt: new Date().toISOString()
-                                 };
+        const existingRecord = existingRecords.find(record => record.date === today);
 
-        const isStatusLocked = Boolean(attendanceRecord.statusLockedAt);
-        const isCheckInLocked = Boolean(attendanceRecord.checkInTime);
-        const isCheckOutLocked = Boolean(attendanceRecord.checkOutTime);
-
-        const attendanceValues = await showCustomModal({
-            title: 'Update Attendance',
-            message: intern ? `${intern.firstName} ${intern.lastName}` : 'Edit intern attendance record',
-            confirmText: 'Update',
-            fields: [
-                {
-                    label: 'Check In',
-                    name: 'checkIn',
-                    value: attendanceRecord.checkInTime || '',
-                    placeholder: 'HH:MM AM/PM',
-                    disabled: isCheckInLocked,
-                    helpText: isCheckInLocked ? 'Check-in time is locked after the first save.' : 'Format: HH:MM AM/PM, e.g. 08:30 AM'
-                },
-                {
-                    label: 'Check Out',
-                    name: 'checkOut',
-                    value: attendanceRecord.checkOutTime || '',
-                    placeholder: 'HH:MM AM/PM',
-                    disabled: isCheckOutLocked,
-                    helpText: isCheckOutLocked ? 'Check-out time is locked after the first save.' : 'Format: HH:MM AM/PM, must be after check-in'
-                },
-                {
-                    label: 'Status',
-                    name: 'status',
-                    type: 'select',
-                    value: attendanceRecord.status || 'Absent',
-                    options: ['Present', 'Late', 'Absent'],
-                    disabled: isStatusLocked,
-                    helpText: isStatusLocked ? 'Status is locked after the first save.' : ''
-                },
-                {
-                    label: 'Remarks',
-                    name: 'remarks',
-                    value: attendanceRecord.remarks || '',
-                    placeholder: 'Optional'
-                }
-            ]
-        });
-
-        if (!attendanceValues) return;
-
-        const rawCheckIn = isCheckInLocked ? attendanceRecord.checkInTime : (attendanceValues.checkIn.trim() || null);
-        const rawCheckOut = isCheckOutLocked ? attendanceRecord.checkOutTime : (attendanceValues.checkOut.trim() || null);
-
-        if (!isCheckInLocked && rawCheckIn && parseTimeToMinutes(rawCheckIn) === null) {
-            showAlert('Check-in time must be in HH:MM AM/PM format, e.g. 08:30 AM.', 'error');
-            return;
-        }
-        if (!isCheckOutLocked && rawCheckOut && parseTimeToMinutes(rawCheckOut) === null) {
-            showAlert('Check-out time must be in HH:MM AM/PM format, e.g. 05:00 PM.', 'error');
+        if (existingRecord && existingRecord.checkInTime) {
+            showAlert('This intern has already checked in today.', 'warning');
             return;
         }
 
-        if (rawCheckIn && rawCheckOut) {
-            const checkInMinutes = parseTimeToMinutes(rawCheckIn);
-            const checkOutMinutes = parseTimeToMinutes(rawCheckOut);
-            if (checkInMinutes !== null && checkOutMinutes !== null && checkOutMinutes <= checkInMinutes) {
-                showAlert('Check-out time must be later than check-in time.', 'error');
-                return;
-            }
-        }
+        const checkInTime = formatExactTime(now);
+        const status = determineAttendanceStatus(now);
 
-        await updateAttendance({
-            ...attendanceRecord,
-            internId: internId,
-            checkInTime: rawCheckIn,
-            checkOutTime: rawCheckOut,
-            status: isStatusLocked ? attendanceRecord.status : attendanceValues.status,
-            remarks: attendanceValues.remarks || '',
+        const recordToSave = {
+            ...(existingRecord || {
+                id: Date.now(),
+                internId: internId,
+                internName: intern ? `${intern.firstName} ${intern.lastName}` : '',
+                internId_code: intern ? intern.internId : '',
+                email: intern ? intern.email : '',
+                department: intern ? intern.department : '',
+                date: today,
+                checkOutTime: null,
+                createdAt: new Date().toISOString()
+            }),
+            checkInTime,
+            status,
+            statusLockedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-        });
+        };
 
-        showAlert('Attendance updated successfully!', 'success', 4000);
+        if (existingRecord) {
+            await dbPut('attendance', recordToSave);
+        } else {
+            await addAttendance(recordToSave);
+        }
+
+        showAlert(`Checked in at ${checkInTime} — marked ${status}.`, 'success', 4000);
         await loadAttendanceStatistics();
         await loadAttendanceTable();
     } catch (error) {
-        showAlert('Error updating attendance: ' + error, 'error');
+        showAlert('Error checking in: ' + error, 'error');
+    }
+}
+
+async function checkOutAttendance(internId) {
+    try {
+        const now = new Date();
+        if (isAttendanceWindowClosed(now)) {
+            showAlert('Check-out is disabled after 5:00 PM.', 'warning');
+            return;
+        }
+
+        const today = now.toISOString().split('T')[0];
+        const existingRecords = await getAttendanceByInternId(internId);
+        const existingRecord = existingRecords.find(record => record.date === today);
+
+        if (!existingRecord || !existingRecord.checkInTime) {
+            showAlert('This intern must check in before checking out.', 'warning');
+            return;
+        }
+        if (existingRecord.checkOutTime) {
+            showAlert('This intern has already checked out today.', 'warning');
+            return;
+        }
+
+        const checkOutTime = formatExactTime(now);
+
+        await dbPut('attendance', {
+            ...existingRecord,
+            checkOutTime,
+            updatedAt: new Date().toISOString()
+        });
+
+        showAlert(`Checked out at ${checkOutTime}.`, 'success', 4000);
+        await loadAttendanceStatistics();
+        await loadAttendanceTable();
+    } catch (error) {
+        showAlert('Error checking out: ' + error, 'error');
     }
 }
 
