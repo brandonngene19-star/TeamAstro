@@ -914,9 +914,9 @@ async function loadAttendanceTable() {
                     <td>${statusBadge}</td>
                     <td>
                         <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
-                            <button class="btn btn-sm btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>
-                            <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-light btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
+                            <button class=btn btn-light btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>
+                            <button class=btn btn-light btn-view" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -1267,6 +1267,7 @@ async function loadDashboardUsers() {
                         <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
                         <div>
                             <div class="fw-bold">${escapeHTML(intern.firstName)} ${escapeHTML(intern.lastName)}</div>
+                            <small class="text-muted">${escapeHTML(intern.email)}</small>
                         </div>
                     </div>
                 </td>
@@ -1278,7 +1279,10 @@ async function loadDashboardUsers() {
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-sm btn-primary" type="button" title="Update intern" onclick="editIntern(${intern.id})">
+                        <button class=btn btn-light" type="button" title="View details" onclick="viewInternDetails(${intern.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-light" type="button" title="Update intern" onclick="editIntern(${intern.id})">
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
@@ -1563,6 +1567,7 @@ async function loadSupervisorsPage() {
                         <span class="dashboard-avatar">${escapeHTML(getUserInitials(supervisor.firstName, supervisor.lastName))}</span>
                         <div>
                             <div class="fw-bold">${escapeHTML(supervisor.firstName)} ${escapeHTML(supervisor.lastName)}</div>
+                            <small class="text-muted">${escapeHTML(supervisor.email)}</small>
                         </div>
                     </div>
                 </td>
@@ -1573,7 +1578,10 @@ async function loadSupervisorsPage() {
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
+                        <button class="btn btn-light" type="button" title="View details" onclick="viewSupervisorDetails(${supervisor.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class=btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
@@ -2229,7 +2237,12 @@ async function loadPerformancePage() {
                     <td>${escapeHTML(performance?.rating || 'Not reviewed')}</td>
                     <td>${renderFeedbackCell(performance?.remarks)}</td>
                     <td>${escapeHTML(formatDashboardDate(performance?.updatedAt || performance?.createdAt))}</td>
-                    <td><button class="btn btn-sm btn-primary" onclick="editPerformance(${intern.id})"><i class="fas fa-pen"></i></button></td>
+                    <td>
+                        <div class="table-actions">
+                            <button class=btn btn-light" type="button" title="View details" onclick="viewPerformanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-light" type="button" title="Update performance" onclick="editPerformance(${intern.id})"><i class="fas fa-pen"></i></button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
