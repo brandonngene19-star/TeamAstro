@@ -151,6 +151,58 @@ function showCustomConfirm(message, options = {}) {
     });
 }
 
+/*
+  Generic read-only "Details" popup used by the Details button on every table.
+  Pass a title, an optional subtitle, and a list of { label, value } rows to
+  display. Unlike showCustomModal, this has a single "Close" button since
+  there's nothing to submit.
+*/
+function showDetailsModal({ title, subtitle = '', rows = [] }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+
+    const rowsHTML = rows.length
+        ? rows.map(row => `
+            <div class="details-row">
+                <span>${escapeHTML(row.label)}</span>
+                <span>${row.value === null || row.value === undefined || row.value === '' ? '-' : escapeHTML(row.value)}</span>
+            </div>
+        `).join('')
+        : `<p class="details-empty">No details available.</p>`;
+
+    overlay.innerHTML = `
+        <div class="custom-modal details-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-icon info">
+                    <i class="fas fa-circle-info"></i>
+                </div>
+                <div>
+                    <h3>${escapeHTML(title)}</h3>
+                    ${subtitle ? `<p>${escapeHTML(subtitle)}</p>` : ''}
+                </div>
+            </div>
+            <div class="details-modal-body">
+                ${rowsHTML}
+            </div>
+            <div class="custom-modal-actions">
+                <button type="button" class="custom-modal-confirm details-close-btn">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => {
+        overlay.classList.add('closing');
+        setTimeout(() => overlay.remove(), 180);
+    };
+
+    overlay.querySelector('.details-close-btn').addEventListener('click', close);
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
 /* 
   COMPLEX FUNCTION: Database Setup (IndexedDB Initializer)
   Browser databases use asynchronous request listeners (onsuccess, onerror, onupgradeneeded). 
@@ -864,6 +916,7 @@ async function loadAttendanceTable() {
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
                             <button class="btn btn-sm btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>
+                            <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -900,6 +953,34 @@ async function loadAttendanceTable() {
 
 function applyAttendanceFilters() {
     loadAttendanceTable();
+}
+
+async function viewAttendanceDetails(internId) {
+    try {
+        const intern = await getInternById(internId);
+        if (!intern) {
+            showAlert('Intern record was not found.', 'warning');
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const records = await getAttendanceByInternId(internId);
+        const todaysRecord = records.find(record => record.date === today);
+
+        showDetailsModal({
+            title: `${intern.firstName} ${intern.lastName}`,
+            subtitle: 'Attendance Details',
+            rows: [
+                { label: 'Department', value: intern.department },
+                { label: 'Date', value: today },
+                { label: 'Status', value: todaysRecord?.status || '-' },
+                { label: 'Check In', value: todaysRecord?.checkInTime || '-' },
+                { label: 'Check Out', value: todaysRecord?.checkOutTime || '-' }
+            ]
+        });
+    } catch (error) {
+        showAlert('Error loading attendance details: ' + error, 'error');
+    }
 }
 
 function bindAttendanceSelectionControls() {
@@ -1197,7 +1278,7 @@ async function loadDashboardUsers() {
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-light" type="button" title="Update intern" onclick="editIntern(${intern.id})">
+                        <button class="btn btn-sm btn-primary" type="button" title="Update intern" onclick="editIntern(${intern.id})">
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
@@ -1233,6 +1314,32 @@ async function loadDashboardUsers() {
     } catch (error) {
         console.error('Error loading dashboard users:', error);
         showAlert('Error loading dashboard users: ' + error, 'error');
+    }
+}
+
+async function viewInternDetails(internId) {
+    try {
+        const intern = await getInternById(internId);
+        if (!intern) {
+            showAlert('Intern record was not found.', 'warning');
+            return;
+        }
+
+        showDetailsModal({
+            title: `${intern.firstName} ${intern.lastName}`,
+            subtitle: 'Intern Details',
+            rows: [
+                { label: 'Email', value: intern.email },
+                { label: 'Phone', value: intern.phone },
+                { label: 'Department', value: intern.department },
+                { label: 'School', value: intern.school },
+                { label: 'Gender', value: intern.gender },
+                { label: 'Supervisor', value: intern.supervisorName || 'Unassigned' },
+                { label: 'Date Added', value: formatDashboardDate(intern.dateAdded) }
+            ]
+        });
+    } catch (error) {
+        showAlert('Error loading intern details: ' + error, 'error');
     }
 }
 
@@ -1466,7 +1573,7 @@ async function loadSupervisorsPage() {
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
+                        <button class="btn btn-sm btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
@@ -1501,6 +1608,36 @@ async function loadSupervisorsPage() {
     } catch (error) {
         console.error('Error loading supervisors:', error);
         showAlert('Error loading supervisors: ' + error, 'error');
+    }
+}
+
+async function viewSupervisorDetails(supervisorId) {
+    try {
+        const [supervisor, interns] = await Promise.all([
+            getSupervisorById(supervisorId),
+            getAllInterns()
+        ]);
+        if (!supervisor) {
+            showAlert('Supervisor record was not found.', 'warning');
+            return;
+        }
+
+        const assignedCount = interns.filter(intern => intern.supervisorId === supervisor.id).length;
+
+        showDetailsModal({
+            title: `${supervisor.firstName} ${supervisor.lastName}`,
+            subtitle: 'Supervisor Details',
+            rows: [
+                { label: 'Email', value: supervisor.email },
+                { label: 'Phone', value: supervisor.phone },
+                { label: 'Gender', value: supervisor.gender },
+                { label: 'Department', value: supervisor.department },
+                { label: 'Assigned Interns', value: assignedCount },
+                { label: 'Date Added', value: formatDashboardDate(supervisor.dateAdded) }
+            ]
+        });
+    } catch (error) {
+        showAlert('Error loading supervisor details: ' + error, 'error');
     }
 }
 
@@ -2092,7 +2229,7 @@ async function loadPerformancePage() {
                     <td>${escapeHTML(performance?.rating || 'Not reviewed')}</td>
                     <td>${renderFeedbackCell(performance?.remarks)}</td>
                     <td>${escapeHTML(formatDashboardDate(performance?.updatedAt || performance?.createdAt))}</td>
-                    <td><button class="btn btn-light" onclick="editPerformance(${intern.id})"><i class="fas fa-pen"></i></button></td>
+                    <td><button class="btn btn-sm btn-primary" onclick="editPerformance(${intern.id})"><i class="fas fa-pen"></i></button></td>
                 </tr>
             `;
         }).join('');
@@ -2125,6 +2262,33 @@ async function loadPerformancePage() {
 
 function applyPerformanceFilters() {
     loadPerformancePage();
+}
+
+async function viewPerformanceDetails(internId) {
+    try {
+        const intern = await getInternById(internId);
+        if (!intern) {
+            showAlert('Intern record was not found.', 'warning');
+            return;
+        }
+
+        const existingRecords = await getPerformanceByInternId(internId);
+        const performance = existingRecords[existingRecords.length - 1];
+
+        showDetailsModal({
+            title: `${intern.firstName} ${intern.lastName}`,
+            subtitle: 'Performance Details',
+            rows: [
+                { label: 'Department', value: intern.department },
+                { label: 'Score', value: performance ? `${performance.score}%` : 'Pending' },
+                { label: 'Rating', value: performance?.rating || 'Not reviewed' },
+                { label: 'Feedback', value: performance?.remarks || 'No feedback yet' },
+                { label: 'Last Review', value: formatDashboardDate(performance?.updatedAt || performance?.createdAt) }
+            ]
+        });
+    } catch (error) {
+        showAlert('Error loading performance details: ' + error, 'error');
+    }
 }
 
 async function editPerformance(internId) {
