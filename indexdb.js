@@ -1267,7 +1267,6 @@ async function loadDashboardUsers() {
                         <span class="dashboard-avatar">${escapeHTML(getUserInitials(intern.firstName, intern.lastName))}</span>
                         <div>
                             <div class="fw-bold">${escapeHTML(intern.firstName)} ${escapeHTML(intern.lastName)}</div>
-                            <small class="text-muted">${escapeHTML(intern.email)}</small>
                         </div>
                     </div>
                 </td>
@@ -1567,7 +1566,6 @@ async function loadSupervisorsPage() {
                         <span class="dashboard-avatar">${escapeHTML(getUserInitials(supervisor.firstName, supervisor.lastName))}</span>
                         <div>
                             <div class="fw-bold">${escapeHTML(supervisor.firstName)} ${escapeHTML(supervisor.lastName)}</div>
-                            <small class="text-muted">${escapeHTML(supervisor.email)}</small>
                         </div>
                     </div>
                 </td>
