@@ -1430,7 +1430,11 @@ async function loadDashboardUsers() {
                         <th>Phone</th>
                         <th>Gender</th>
                         <th>Supervisor</th>
+<<<<<<< HEAD
                         <th>Date</th>
+=======
+                        <th>Date </th>
+>>>>>>> 8679fff7b5fd5d75872abd17fc2c6515b2f8f90e
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -1494,7 +1498,7 @@ async function editIntern(internId) {
                     name: 'department',
                     type: 'select',
                     value: intern.department || 'Software Engineering',
-                    options: ['SOFTWWARE ENGINEERING','COMPUTER SCIENCE AND NETWORKS','QUALITY ASSURANCE','ACCOUNTING','DRIVING SCHOOL','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','OFFICE AUTOMATION']
+                    options: ['PDL','COMPUTER SCIENCE AND NETWORKS','MANAGMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
 
                 },
                 {
@@ -1727,7 +1731,11 @@ async function loadSupervisorsPage() {
                         <th>Phone</th>
                         <th>Department</th>
                         <th>Interns</th>
+<<<<<<< HEAD
                         <th>Date</th>
+=======
+                        <th>Date </th>
+>>>>>>> 8679fff7b5fd5d75872abd17fc2c6515b2f8f90e
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -1801,7 +1809,7 @@ async function editSupervisor(supervisorId) {
                     name: 'department',
                     type: 'select',
                     value: supervisor.department ||'software Engineering',
-                    options: ['SOFTWARE ENGINEERING', 'COMPUTER SCIENCE and NETWORKS', 'QUALITY ASSURANCE','ACCOUNTING','DRIVING SCHOOL','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','OFFICE OUTOMATION']    
+                    options: ['PDL','COMPUTER SCIENCE AND NETWORKS','MANAGMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
                 },
                 
             ]
