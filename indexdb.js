@@ -1495,7 +1495,7 @@ async function editIntern(internId) {
                     name: 'department',
                     type: 'select',
                     value: intern.department || 'Software Engineering',
-                    options: ['PDL','COMPUTER SCIENCE AND NETWORKS','MANAGMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
+                    options: ['PDL','MANAGEMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
 
                 },
                 {
@@ -1817,7 +1817,7 @@ async function editSupervisor(supervisorId) {
                     name: 'department',
                     type: 'select',
                     value: supervisor.department ||'software Engineering',
-                    options: ['PDL','COMPUTER SCIENCE AND NETWORKS','MANAGMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
+                    options: ['PDL', 'MANAGEMENT', 'ACCOUNTING', 'FINISHING', 'FABRIC OFFICE', 'GRAPHICS AND PRINTING', 'BINDING', 'MOUNTING', 'EDITING', 'MARKETING', 'SCREEN PRINTING', 'SECURITY', 'MAINTENANCE', 'TYPESETTING']
                 },
                 {
                     label: 'Status',
