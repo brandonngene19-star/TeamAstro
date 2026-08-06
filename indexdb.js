@@ -1411,7 +1411,7 @@ async function loadDashboardUsers() {
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
-                            <i class="fas fa-user-tie"></i>
+                            <i class="fas fa-user-plus"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Delete intern" onclick="removeIntern(${intern.id})">
                             <i class="fas fa-trash"></i>
@@ -1566,6 +1566,14 @@ async function assignInternSupervisor(internId) {
             return;
         }
 
+        const activeSupervisors = supervisors.filter(supervisor => (supervisor.status || 'Active') === 'Active');
+        if (activeSupervisors.length === 0) {
+            showAlert('No active supervisors are available for assignment.', 'warning');
+            return;
+        }
+
+        const currentSupervisorIsActive = activeSupervisors.some(supervisor => supervisor.id === intern.supervisorId);
+
         const values = await showCustomModal({
             title: 'Assign Supervisor',
             message: `${intern.firstName} ${intern.lastName}`,
@@ -1575,8 +1583,8 @@ async function assignInternSupervisor(internId) {
                     label: 'Supervisor',
                     name: 'supervisorId',
                     type: 'select',
-                    value: intern.supervisorId || supervisors[0].id,
-                    options: supervisors.map(supervisor => ({
+                    value: currentSupervisorIsActive ? intern.supervisorId : activeSupervisors[0].id,
+                    options: activeSupervisors.map(supervisor => ({
                         value: supervisor.id,
                         label: `${supervisor.firstName} ${supervisor.lastName} - ${supervisor.department}`
                     }))
@@ -1586,9 +1594,9 @@ async function assignInternSupervisor(internId) {
 
         if (!values) return;
 
-        const supervisor = supervisors.find(item => item.id === Number(values.supervisorId));
+        const supervisor = activeSupervisors.find(item => item.id === Number(values.supervisorId));
         if (!supervisor) {
-            showAlert('Supervisor record was not found.', 'warning');
+            showAlert('Supervisor record was not found or is no longer active.', 'warning');
             return;
         }
 
@@ -1712,7 +1720,7 @@ async function loadSupervisorsPage() {
                         <button class="btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="btn btn-light" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
+                        <button class="btn btn-light" type="button" title="${isActive ? 'Assign supervisor to intern' : 'Inactive supervisors cannot be assigned'}" onclick="assignSupervisorToIntern(${supervisor.id})" ${isActive ? '' : 'disabled'}>
                             <i class="fas fa-user-plus"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
@@ -1932,6 +1940,10 @@ async function assignSupervisorToIntern(supervisorId) {
         const intern = await getInternById(Number(values.internId));
         if (!intern) {
             showAlert('Intern record was not found.', 'warning');
+            return;
+        }
+        if (isActive = status === 'inactive') {
+            showAlert('Cannot assign a supervisor to an inactive intern.', 'warning');
             return;
         }
 
