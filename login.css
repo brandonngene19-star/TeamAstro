@@ -30,6 +30,11 @@ body {
     background-image: url(background.png);
 }
 
+.btn-secondary:hover{
+    cursor: pointer;
+
+}
+
 /* background pattern */
 .login-panel::before {
     content: "";

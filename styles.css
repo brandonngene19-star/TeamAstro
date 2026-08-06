@@ -1699,6 +1699,11 @@ header {
     color: #047857;
 }
 
+.btn-secondary:hover{
+    cursor: pointer;
+
+}
+
 .performance-score.good {
     background: #eff6ff;
     color: #1d4ed8;

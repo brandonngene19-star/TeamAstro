@@ -1090,9 +1090,9 @@ async function viewAttendanceDetails(internId) {
         const weekly = summarizeWeeklyAttendance(records, getWeekRangeStrings());
 
         showDetailsModal({
-            title: `${intern.firstName} ${intern.lastName}`,
-            subtitle: 'Attendance Details',
+            title: 'Attendance Details',
             rows: [
+                { label: 'Name', value: `${intern.firstName} ${intern.lastName}` },
                 { label: 'Department', value: intern.department },
                 { label: 'Date', value: today },
                 { label: 'Status', value: todaysRecord?.status || '-' },
@@ -1454,9 +1454,9 @@ async function viewInternDetails(internId) {
         }
 
         showDetailsModal({
-            title: `${intern.firstName} ${intern.lastName}`,
-            subtitle: 'Intern Details',
-            rows: [
+            title:'Intern Details',
+            rows: [       
+                { label: 'Name', value: `${intern.firstName} ${intern.lastName}` },
                 { label: 'Email', value: intern.email },
                 { label: 'Phone', value: intern.phone },
                 { label: 'Department', value: intern.department },
@@ -1715,6 +1715,11 @@ async function loadSupervisorsPage() {
                         </button>
                     </div>
                 </td>
+                <td><div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchCheckDefault">
+                        <label class="form-check-label" for="switchCheckDefault">Active</label>
+                    </div>
+                </td>
             </tr>
         `).join('');
 
@@ -1727,8 +1732,9 @@ async function loadSupervisorsPage() {
                         <th>Phone</th>
                         <th>Department</th>
                         <th>Interns</th>
-                        <th>Date Added</th>
+                        <th>Date</th>
                         <th>Action</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1741,6 +1747,7 @@ async function loadSupervisorsPage() {
         showAlert('Error loading supervisors: ' + error, 'error');
     }
 }
+
 
 async function viewSupervisorDetails(supervisorId) {
     try {
@@ -1758,6 +1765,7 @@ async function viewSupervisorDetails(supervisorId) {
         showDetailsModal({
             title: 'Supervisor Details:' ,
             rows: [
+
                 { label: 'Name', value: `${supervisor.firstName} ${supervisor.lastName}` },
                 { label: 'Email', value: supervisor.email },
                 { label: 'Phone', value: supervisor.phone },
@@ -2412,14 +2420,15 @@ async function viewPerformanceDetails(internId) {
         const performance = existingRecords[existingRecords.length - 1];
 
         showDetailsModal({
-            title: `${intern.firstName} ${intern.lastName}`,
-            subtitle: 'Performance Details',
+            title: 'Performance Details',
             rows: [
+                { label: 'Name', value: `${intern.firstName} ${intern.lastName}` },
                 { label: 'Department', value: intern.department },
                 { label: 'Score', value: performance ? `${performance.score}%` : 'Pending' },
                 { label: 'Rating', value: performance?.rating || 'Not reviewed' },
                 { label: 'Feedback', value: performance?.remarks || 'No feedback yet' },
-                { label: 'Last Review', value: formatDashboardDate(performance?.updatedAt || performance?.createdAt) }
+                { label: 'Last Review', value: formatDashboardDate(performance?.updatedAt || performance?.createdAt) },
+
             ]
         });
     } catch (error) {
