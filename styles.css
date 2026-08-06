@@ -1632,6 +1632,36 @@ header {
     opacity: 0.9;
 }
 
+/* weekly Present/Late/Absent tally shown in the attendance table */
+.weekly-summary {
+    white-space: nowrap;
+}
+
+.week-badge {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.week-badge.week-present {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.week-badge.week-late {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.week-badge.week-absent {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
 /* user role chip */
 .role-badge {
     display: inline-flex;
