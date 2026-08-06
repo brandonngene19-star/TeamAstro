@@ -731,6 +731,7 @@ function handleFormSubmit(event, formType) {
                 email,
                 phone,
                 department,
+                status: 'Active',
                 dateAdded: new Date().toISOString()
             };
 
@@ -1684,7 +1685,11 @@ async function loadSupervisorsPage() {
             return;
         }
 
-        const rowsHTML = supervisors.map(supervisor => `
+        const rowsHTML = supervisors.map(supervisor => {
+            const status = supervisor.status || 'Active';
+            const isActive = status === 'Active';
+
+            return `
             <tr>
                 <td>
                     <div class="dashboard-user-cell">
@@ -1704,7 +1709,7 @@ async function loadSupervisorsPage() {
                         <button class="btn btn-light" type="button" title="View details" onclick="viewSupervisorDetails(${supervisor.id})">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class=btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
+                        <button class="btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
                             <i class="fas fa-pen"></i>
                         </button>
                         <button class="btn btn-light" type="button" title="Assign supervisor to intern" onclick="assignSupervisorToIntern(${supervisor.id})">
@@ -1715,13 +1720,15 @@ async function loadSupervisorsPage() {
                         </button>
                     </div>
                 </td>
-                <td><div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" id="switchCheckDefault">
-                        <label class="form-check-label" for="switchCheckDefault">Active</label>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchCheck${supervisor.id}" ${isActive ? 'checked' : ''} onchange="toggleSupervisorStatus(${supervisor.id}, this.checked)">
+                        <label class="form-check-label" for="switchCheck${supervisor.id}">${escapeHTML(status)}</label>
                     </div>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         tableContainer.innerHTML = `
             <table class="table table-hover dashboard-user-table">
@@ -1772,6 +1779,7 @@ async function viewSupervisorDetails(supervisorId) {
                 { label: 'Gender', value: supervisor.gender },
                 { label: 'Department', value: supervisor.department },
                 { label: 'Assigned Interns', value: assignedCount },
+                { label: 'Status', value: supervisor.status || 'Active' },
                 { label: 'Date', value: formatDashboardDate(supervisor.dateAdded) }
             ]
         });
@@ -1811,6 +1819,13 @@ async function editSupervisor(supervisorId) {
                     value: supervisor.department ||'software Engineering',
                     options: ['PDL','COMPUTER SCIENCE AND NETWORKS','MANAGMENT','ACCOUNTING','FINISHING','FABRIC OFFICE','GRAPHICS AND PRINTING','BINDING','MOUNTING','EDITING','MARKETING','SCREEN PRINTING','SECURITY','MAINTENANCE','TYPESETTING']
                 },
+                {
+                    label: 'Status',
+                    name: 'status',
+                    type: 'select',
+                    value: supervisor.status || 'Active',
+                    options: ['Active', 'Inactive']
+                },
                 
             ]
         });
@@ -1842,6 +1857,7 @@ async function editSupervisor(supervisorId) {
             email: values.email.trim(),
             phone: values.phone.trim(),
             department: values.department,
+            status: values.status || supervisor.status || 'Active',
             updatedAt: new Date().toISOString()
         });
         showAlert('Supervisor updated successfully.', 'success');
@@ -1849,6 +1865,31 @@ async function editSupervisor(supervisorId) {
         await loadGroupTools();
     } catch (error) {
         showAlert('Error updating supervisor: ' + error, 'error');
+    }
+}
+
+async function toggleSupervisorStatus(supervisorId, isActive) {
+    try {
+        const supervisor = await getSupervisorById(supervisorId);
+        if (!supervisor) {
+            showAlert('Supervisor record was not found.', 'warning');
+            await loadSupervisorsPage();
+            return;
+        }
+
+        const newStatus = isActive ? 'Active' : 'Inactive';
+
+        await updateSupervisor({
+            ...supervisor,
+            status: newStatus,
+            updatedAt: new Date().toISOString()
+        });
+
+        showAlert(`${supervisor.firstName} ${supervisor.lastName} is now ${newStatus}.`, 'success');
+        await loadSupervisorsPage();
+    } catch (error) {
+        showAlert('Error updating supervisor status: ' + error, 'error');
+        await loadSupervisorsPage();
     }
 }
 
