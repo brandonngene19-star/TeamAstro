@@ -1430,11 +1430,7 @@ async function loadDashboardUsers() {
                         <th>Phone</th>
                         <th>Gender</th>
                         <th>Supervisor</th>
-<<<<<<< HEAD
                         <th>Date</th>
-=======
-                        <th>Date </th>
->>>>>>> 8679fff7b5fd5d75872abd17fc2c6515b2f8f90e
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -1731,11 +1727,7 @@ async function loadSupervisorsPage() {
                         <th>Phone</th>
                         <th>Department</th>
                         <th>Interns</th>
-<<<<<<< HEAD
-                        <th>Date</th>
-=======
-                        <th>Date </th>
->>>>>>> 8679fff7b5fd5d75872abd17fc2c6515b2f8f90e
+                        <th>Date Added</th>
                         <th>Action</th>
                     </tr>
                 </thead>
