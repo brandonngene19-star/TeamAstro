@@ -800,6 +800,105 @@ function createAttendanceRecordForNewIntern(intern) {
     });
 }
 
+/*
+  DAILY RESET + HISTORY
+  Attendance records are already keyed by date under the hood (one record per
+  intern per day), so history was technically never lost — but two things
+  were missing:
+    1. A day that passes with an intern never checking in left that day's
+       record stuck at status '-' forever, instead of being finalized as
+       "Absent". That made the weekly Absent count meaningless.
+    2. The attendance table read from ALL records ever created and just took
+       whichever one happened to be last per intern, so a stale status from
+       a previous day could still show up today instead of resetting.
+  This function runs once each time the Attendance page loads and fixes both:
+  it finalizes any leftover "-" record from a past day as Absent, and makes
+  sure every currently-registered intern has a fresh blank record for today.
+*/
+async function finalizeAndPrepareAttendanceForToday() {
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+        const [allInterns, allAttendance] = await Promise.all([getAllInterns(), getAllAttendance()]);
+
+        const recordsByIntern = {};
+        allAttendance.forEach(record => {
+            if (!recordsByIntern[record.internId]) recordsByIntern[record.internId] = [];
+            recordsByIntern[record.internId].push(record);
+        });
+
+        const writes = [];
+
+        allInterns.forEach((intern, index) => {
+            const records = recordsByIntern[intern.id] || [];
+            let hasToday = false;
+
+            records.forEach(record => {
+                if (record.date === today) {
+                    hasToday = true;
+                } else if (record.status === '-' || !record.status) {
+                    // The day is over and this intern never checked in — file it as Absent.
+                    writes.push(dbPut('attendance', {
+                        ...record,
+                        status: 'Absent',
+                        finalizedAt: new Date().toISOString()
+                    }));
+                }
+            });
+
+            if (!hasToday) {
+                writes.push(addAttendance({
+                    id: Date.now() + index,
+                    internId: intern.id,
+                    internName: `${intern.firstName} ${intern.lastName}`,
+                    internId_code: intern.internId,
+                    email: intern.email,
+                    department: intern.department,
+                    date: today,
+                    checkInTime: null,
+                    checkOutTime: null,
+                    status: '-',
+                    createdAt: new Date().toISOString()
+                }));
+            }
+        });
+
+        if (writes.length) {
+            await Promise.all(writes);
+            console.log(`✅ Attendance day rollover complete: ${writes.length} record(s) finalized/created.`);
+        }
+    } catch (error) {
+        console.error('❌ Error preparing today\'s attendance:', error);
+    }
+}
+
+// Monday–Sunday boundaries (as 'YYYY-MM-DD' strings) for the week containing referenceDate.
+function getWeekRangeStrings(referenceDate = new Date()) {
+    const date = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+    const day = date.getDay(); // 0 = Sunday ... 6 = Saturday
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const toISODate = (d) => d.toISOString().split('T')[0];
+    return { start: toISODate(monday), end: toISODate(sunday) };
+}
+
+// Tallies how many times an intern was Present / Late / Absent within a week range.
+function summarizeWeeklyAttendance(records, weekRange) {
+    const summary = { present: 0, late: 0, absent: 0 };
+    records.forEach(record => {
+        if (record.date < weekRange.start || record.date > weekRange.end) return;
+        if (record.status === 'Present') summary.present++;
+        else if (record.status === 'Late') summary.late++;
+        else if (record.status === 'Absent') summary.absent++;
+    });
+    return summary;
+}
+
 async function loadAttendanceStatistics() {
     const today = new Date().toISOString().split('T')[0];
     
@@ -838,10 +937,23 @@ async function loadAttendanceTable() {
         const allInterns = await getAllInterns();
         const allAttendance = await getAllAttendance();
         
+        // Only today's record should drive what the table shows — this is what
+        // makes the view "reset" each day instead of carrying over a stale
+        // status from a previous day. Older records stay in the DB untouched.
         const attendanceMap = {};
         allAttendance.forEach(record => {
-            attendanceMap[record.internId] = record;
+            if (record.date === today) {
+                attendanceMap[record.internId] = record;
+            }
         });
+
+        // Full history per intern, used to compute the "This Week" tally.
+        const recordsByIntern = {};
+        allAttendance.forEach(record => {
+            if (!recordsByIntern[record.internId]) recordsByIntern[record.internId] = [];
+            recordsByIntern[record.internId].push(record);
+        });
+        const weekRange = getWeekRangeStrings();
 
         const statusFilterEl = document.getElementById('attendanceStatusFilter');
         const searchInputEl = document.getElementById('attendanceSearchInput');
@@ -863,12 +975,13 @@ async function loadAttendanceTable() {
                 <thead class="table-light">
                     <tr>
                         <th style="width: 5%"><input type="checkbox" class="form-check-input"></th>
-                        <th style="width: 15%">Intern</th>
-                        <th style="width: 15%">Department</th>
-                        <th style="width: 12%">Check In</th>
-                        <th style="width: 12%">Check Out</th>
-                        <th style="width: 10%">Status</th>
-                        <th style="width: 31%">Actions</th>
+                        <th style="width: 13%">Intern</th>
+                        <th style="width: 12%">Department</th>
+                        <th style="width: 9%">Check In</th>
+                        <th style="width: 9%">Check Out</th>
+                        <th style="width: 9%">Status</th>
+                        <th style="width: 15%">This Week</th>
+                        <th style="width: 28%">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -896,6 +1009,13 @@ async function loadAttendanceTable() {
             const checkInDisabled = windowClosed || hasCheckedIn;
             const checkOutDisabled = windowClosed || !hasCheckedIn || hasCheckedOut;
 
+            const weekly = summarizeWeeklyAttendance(recordsByIntern[intern.id] || [], weekRange);
+            const weeklySummaryCell = `
+                <span class="week-badge week-present" title="Present this week">P ${weekly.present}</span>
+                <span class="week-badge week-late" title="Late this week">L ${weekly.late}</span>
+                <span class="week-badge week-absent" title="Absent this week">A ${weekly.absent}</span>
+            `;
+
             tableHTML += `
                 <tr>
                     <td><input type="checkbox" class="form-check-input intern-select" value="${intern.id}"></td>
@@ -912,6 +1032,7 @@ async function loadAttendanceTable() {
                     <td><span class="btn-light">${attendance.checkInTime || '-'}</span></td>
                     <td><span class="btn-light">${attendance.checkOutTime || '-'}</span></td>
                     <td>${statusBadge}</td>
+                    <td class="weekly-summary">${weeklySummaryCell}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-light btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
@@ -966,6 +1087,7 @@ async function viewAttendanceDetails(internId) {
         const today = new Date().toISOString().split('T')[0];
         const records = await getAttendanceByInternId(internId);
         const todaysRecord = records.find(record => record.date === today);
+        const weekly = summarizeWeeklyAttendance(records, getWeekRangeStrings());
 
         showDetailsModal({
             title: `${intern.firstName} ${intern.lastName}`,
@@ -975,7 +1097,10 @@ async function viewAttendanceDetails(internId) {
                 { label: 'Date', value: today },
                 { label: 'Status', value: todaysRecord?.status || '-' },
                 { label: 'Check In', value: todaysRecord?.checkInTime || '-' },
-                { label: 'Check Out', value: todaysRecord?.checkOutTime || '-' }
+                { label: 'Check Out', value: todaysRecord?.checkOutTime || '-' },
+                { label: 'This Week — Present', value: String(weekly.present) },
+                { label: 'This Week — Late', value: String(weekly.late) },
+                { label: 'This Week — Absent', value: String(weekly.absent) }
             ]
         });
     } catch (error) {
@@ -1305,7 +1430,7 @@ async function loadDashboardUsers() {
                         <th>Phone</th>
                         <th>Gender</th>
                         <th>Supervisor</th>
-                        <th>Date Added</th>
+                        <th>Date</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -1338,7 +1463,7 @@ async function viewInternDetails(internId) {
                 { label: 'School', value: intern.school },
                 { label: 'Gender', value: intern.gender },
                 { label: 'Supervisor', value: intern.supervisorName || 'Unassigned' },
-                { label: 'Date Added', value: formatDashboardDate(intern.dateAdded) }
+                { label: 'Date', value: formatDashboardDate(intern.dateAdded) }
             ]
         });
     } catch (error) {
@@ -1602,7 +1727,7 @@ async function loadSupervisorsPage() {
                         <th>Phone</th>
                         <th>Department</th>
                         <th>Interns</th>
-                        <th>Date Added</th>
+                        <th>Date</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -1631,15 +1756,15 @@ async function viewSupervisorDetails(supervisorId) {
         const assignedCount = interns.filter(intern => intern.supervisorId === supervisor.id).length;
 
         showDetailsModal({
-            title: `${supervisor.firstName} ${supervisor.lastName}`,
-            subtitle: 'Supervisor Details',
+            title: 'Supervisor Details:' ,
             rows: [
+                { label: 'Name', value: `${supervisor.firstName} ${supervisor.lastName}` },
                 { label: 'Email', value: supervisor.email },
                 { label: 'Phone', value: supervisor.phone },
                 { label: 'Gender', value: supervisor.gender },
                 { label: 'Department', value: supervisor.department },
                 { label: 'Assigned Interns', value: assignedCount },
-                { label: 'Date Added', value: formatDashboardDate(supervisor.dateAdded) }
+                { label: 'Date', value: formatDashboardDate(supervisor.dateAdded) }
             ]
         });
     } catch (error) {
@@ -2565,8 +2690,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const attendanceElement = document.getElementById('totalInterns');
         if (attendanceElement) {
-            loadAttendanceStatistics();
-            loadAttendanceTable();
+            finalizeAndPrepareAttendanceForToday().then(() => {
+                loadAttendanceStatistics();
+                loadAttendanceTable();
+            });
 
             const attendanceStatusFilter = document.getElementById('attendanceStatusFilter');
             if (attendanceStatusFilter) {
