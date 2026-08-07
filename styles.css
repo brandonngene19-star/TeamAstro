@@ -386,6 +386,10 @@
     margin-right: 6px;
 }
 
+.details-export-btn i {
+    margin-right: 6px;
+}
+
 .custom-modal-confirm.danger {
     background: var(--color-danger);
 }
@@ -1980,6 +1984,10 @@ img, video, table {
 .details-row span:first-child {
     color: var(--text-muted);
     font-weight: 600;
+}
+
+.details-modal .custom-modal-actions.has-export {
+    justify-content: space-between;
 }
 
 .details-row span:last-child {
