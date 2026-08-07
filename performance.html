@@ -34,7 +34,17 @@
            
             <div class="user-info">
                 <p class="user-name">Welcome, Admin</p>
-                <p class="user-email" id="headerAdminEmail">Admin@MIT.flo</p>
+                <div class="user-email-wrapper">
+                    <p class="user-email" id="headerAdminEmail">Admin@MIT.flo</p>
+                    <div class="user-email-dropdown">
+                        <a href="settings.html" class="user-email-dropdown-item">
+                            <i class="fas fa-user-cog"></i> Details
+                        </a>
+                        <button type="button" class="user-email-dropdown-item" onclick="logoutAdmin()">
+                            <i class="fa-solid fa-right-from-bracket"></i> Log out
+                        </button>
+                    </div>
+                </div>
             </div>
              <span class="user-initials">A</span>
         </div>  
@@ -62,12 +72,7 @@
             <a href="settings.html" class="nav-link"><i class="fas fa-gear"></i><span>Settings</span></a>
         </nav>
 
-        <div class="logout">
-            <button class="nav-link logout-link" type="button" onclick="logoutAdmin()">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Log out</span>
-            </button>
-        </div>
+       
     </aside>
 
     <main class="main-content">

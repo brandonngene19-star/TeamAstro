@@ -245,10 +245,12 @@
 /* modal card */
 .custom-modal {
     width: min(460px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     background: white;
     border-radius: 12px;
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-    padding: 22px;
+    padding: 18px 20px;
     animation: modal-slide-up 0.22s ease-out;
 }
 
@@ -262,19 +264,19 @@
 .custom-modal-header {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .custom-modal-icon {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .custom-modal-icon.info {
@@ -288,30 +290,31 @@
 }
 
 .custom-modal h3 {
-    margin: 0 0 6px;
+    margin: 0 0 3px;
     color: var(--text-main);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
 }
 
 .custom-modal p {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.95rem;
-    line-height: 1.45;
+    font-size: 0.9rem;
+    line-height: 1.35;
 }
 
 .custom-modal-form {
     display: grid;
-    gap: 14px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 14px;
 }
 
 .custom-modal-field {
     display: grid;
-    gap: 7px;
+    gap: 4px;
     color: var(--text-main);
     font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .custom-modal-field input,
@@ -319,7 +322,7 @@
     width: 100%;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     color: var(--text-main);
     background: white;
     font: inherit;
@@ -363,7 +366,7 @@
 .custom-modal-actions button {
     border: none;
     border-radius: 8px;
-    padding: 9px 16px;
+    padding: 8px 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -802,6 +805,68 @@ header {
 .user-email:hover {
     text-decoration: underline;
     cursor: pointer;
+}
+
+/* wraps the email so the dropdown can be positioned/hovered as one unit */
+.user-email-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.user-email-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    min-width: 150px;
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    padding: 6px;
+    z-index: 1100;
+}
+
+/* hover the wrapper (not just the text) so moving the cursor down
+   into the menu doesn't cause it to close */
+.user-email-wrapper:hover .user-email-dropdown {
+    display: block;
+}
+
+.user-email-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.user-email-dropdown-item:hover {
+    background-color: var(--border-color-muted);
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.user-email-dropdown-item i {
+    width: 14px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.user-email-dropdown-item:hover i {
+    color: var(--primary-color);
 }
 
 .user-initials {
@@ -1888,7 +1953,7 @@ img, video, table {
 
 .details-section-title {
     margin: 16px 0 6px;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -1903,9 +1968,9 @@ img, video, table {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    padding: 9px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--border-color-muted);
-    font-size: 0.92rem;
+    font-size: 1.05rem;
 }
 
 .details-row:last-child {
@@ -2021,4 +2086,141 @@ img, video, table {
 .btn-checkout:hover {
     background: #1d4ed8;
     color: white;
+}
+
+/* ============================================================
+   Weekly attendance table (See Details modal on Attendance page)
+   ============================================================ */
+.week-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #eef2ff;
+    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.week-table-wrap {
+    border-top: 1px solid var(--border-color-muted);
+    border-bottom: 1px solid var(--border-color-muted);
+    margin: 4px 0 14px;
+}
+
+.week-attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    table-layout: fixed;
+}
+
+.week-attendance-table th {
+    text-align: left;
+    padding: 8px 4px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.week-attendance-table td {
+    padding: 9px 4px;
+    color: var(--text-main);
+    border-top: 1px solid var(--border-color-muted);
+}
+
+.week-attendance-table tr:first-child td {
+    border-top: none;
+}
+
+.week-day-cell {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.week-day-label {
+    font-weight: 700;
+}
+
+.week-day-date {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.week-status-cell {
+    text-align: right;
+}
+
+.week-status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.week-status-pill.present {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.week-status-pill.late {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+}
+
+.week-status-pill.absent {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.week-status-pill.pending,
+.week-status-pill.upcoming {
+    background: var(--border-color-muted);
+    color: var(--text-muted);
+}
+
+.week-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.week-stat-card {
+    background: var(--bg-body);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+}
+
+.week-stat-label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.week-stat-value {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.week-stat-card.present .week-stat-value {
+    color: var(--color-success);
+}
+
+.week-stat-card.late .week-stat-value {
+    color: var(--color-warning);
+}
+
+.week-stat-card.absent .week-stat-value {
+    color: var(--color-danger);
 }

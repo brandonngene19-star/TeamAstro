@@ -30,7 +30,17 @@
             <div class="right-header">
                 <div class="user-info">
                     <p class="user-name">Welcome, Admin</p>
-                    <p class="user-email" id="headerAdminEmail">Admin@MIT.flo</p>
+                    <div class="user-email-wrapper">
+                        <p class="user-email" id="headerAdminEmail">Admin@MIT.flo</p>
+                        <div class="user-email-dropdown">
+                            <a href="settings.html" class="user-email-dropdown-item">
+                                <i class="fas fa-user-cog"></i> Details
+                            </a>
+                            <button type="button" class="user-email-dropdown-item" onclick="logoutAdmin()">
+                                <i class="fa-solid fa-right-from-bracket"></i> Log out
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <span class="user-initials">A</span>
             </div>
@@ -57,12 +67,7 @@
             <a href="settings.html" class="nav-link"><i class="fas fa-gear"></i><span>Settings</span></a>
         </nav>
 
-        <div class="logout">
-            <button class="nav-link logout-link" type="button" onclick="logoutAdmin()">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Log out</span>
-            </button>
-        </div>
+        
     </aside>
 
     <main class="main-content">
@@ -82,7 +87,7 @@
                         </button>
                         <button class="btn btn-add-user" type="button" onclick="openSupervisorModal()">
                             <i class="fas fa-user-plus"></i>
-                            <span>Register Supervisor</span>
+                            <span>Add Supervisor</span>
                         </button>
                     </div>
                 </div>
@@ -187,7 +192,7 @@
                     <i class="fas fa-user-tie"></i>
                 </div>
                 <div>
-                    <h3>Register Supervisor</h3>
+                    <h3>Add Supervisor</h3>
                     <p>Add a new supervisor account.</p>
                 </div>
             </div>
@@ -207,7 +212,9 @@
                 </div>
                 <div class="col-md-4">
                     <label for="supervisorPhone" class="form-label">Phone Number</label>
-                    <input type="tel" class="form-control" id="supervisorPhone" required>
+                    <input type="tel" class="form-control" id="supervisorPhone" pattern="^\d{9}$" maxlength="9" inputmode="numeric" title="Phone number must be exactly 9 digits" required>
+                    <div class="invalid-feedback">Please provide a valid phone number (must be exactly 9 digits).</div>
+                    <div class="valid-feedback">Looks good!</div>
                 </div>
                 <div class="col-md-4">
                     <label for="supervisorDepartment" class="form-label">Department</label>

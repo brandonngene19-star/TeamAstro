@@ -7,7 +7,21 @@ const NAME_REGEX = /^[a-zA-Z\s]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidPhone(phone) {
-    return /^\d{10,}$/.test(String(phone).replace(/[\s\-()]/g, ''));
+    return /^\d{9}$/.test(String(phone).replace(/[\s\-()]/g, ''));
+}
+
+// Returns a 'YYYY-MM-DD' string for the date's LOCAL calendar day.
+// date.toISOString().split('T')[0] is a real bug for any timezone ahead of
+// UTC (e.g. UTC+1 and beyond): toISOString() first converts to UTC, which
+// rolls the date back by a day for dates built at local midnight (00:00:00)
+// — exactly what the weekly Monday–Sunday range calculation does. This keeps
+// every "today" / week-boundary calculation locked to the browser's actual
+// local date, so the attendance page always matches the real current date.
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function showAlert(message, type = 'info', duration = 4000) {
@@ -88,10 +102,14 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
                 `;
             }
 
+            const maxlengthAttribute = field.maxlength ? `maxlength="${field.maxlength}"` : '';
+            const patternAttribute = field.pattern ? `pattern="${escapeHTML(field.pattern)}"` : '';
+            const inputmodeAttribute = field.inputmode ? `inputmode="${field.inputmode}"` : '';
+
             return `
                 <label class="custom-modal-field">
                     <span>${escapeHTML(field.label)}</span>
-                    <input name="${escapeHTML(field.name)}" type="text" value="${escapeHTML(field.value || '')}" placeholder="${escapeHTML(field.placeholder || '')}" ${lockedAttribute}>
+                    <input name="${escapeHTML(field.name)}" type="text" value="${escapeHTML(field.value || '')}" placeholder="${escapeHTML(field.placeholder || '')}" ${maxlengthAttribute} ${patternAttribute} ${inputmodeAttribute} ${lockedAttribute}>
                     ${field.helpText ? `<small>${escapeHTML(field.helpText)}</small>` : ''}
                 </label>
             `;
@@ -162,12 +180,17 @@ function showDetailsModal({ title, subtitle = '', rows = [] }) {
     overlay.className = 'custom-modal-overlay';
 
     const rowsHTML = rows.length
-        ? rows.map(row => `
-            <div class="details-row">
-                <span>${escapeHTML(row.label)}</span>
-                <span>${row.value === null || row.value === undefined || row.value === '' ? '-' : escapeHTML(row.value)}</span>
-            </div>
-        `).join('')
+        ? rows.map(row => {
+            if (row.type === 'section') {
+                return `<div class="details-section-title">${escapeHTML(row.label)}</div>`;
+            }
+            return `
+                <div class="details-row">
+                    <span>${escapeHTML(row.label)}</span>
+                    <span>${row.value === null || row.value === undefined || row.value === '' ? '-' : escapeHTML(row.value)}</span>
+                </div>
+            `;
+        }).join('')
         : `<p class="details-empty">No details available.</p>`;
 
     overlay.innerHTML = `
@@ -647,7 +670,7 @@ function handleFormSubmit(event, formType) {
         }
 
         if (!isValidPhone(phone)) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
+            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
             return;
         }
 
@@ -713,7 +736,7 @@ function handleFormSubmit(event, formType) {
         }
 
         if (!isValidPhone(phone)) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
+            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
             return;
         }
 
@@ -777,7 +800,7 @@ function generateInternID() {
 }
 
 function createAttendanceRecordForNewIntern(intern) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     
     const attendanceRecord = {
         id: Date.now(),
@@ -817,7 +840,7 @@ function createAttendanceRecordForNewIntern(intern) {
   sure every currently-registered intern has a fresh blank record for today.
 */
 async function finalizeAndPrepareAttendanceForToday() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     try {
         const [allInterns, allAttendance] = await Promise.all([getAllInterns(), getAllAttendance()]);
@@ -884,7 +907,7 @@ function getWeekRangeStrings(referenceDate = new Date()) {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
-    const toISODate = (d) => d.toISOString().split('T')[0];
+    const toISODate = (d) => getLocalDateString(d);
     return { start: toISODate(monday), end: toISODate(sunday) };
 }
 
@@ -901,7 +924,7 @@ function summarizeWeeklyAttendance(records, weekRange) {
 }
 
 async function loadAttendanceStatistics() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     
     try {
         const allInterns = await getAllInterns();
@@ -932,7 +955,7 @@ async function loadAttendanceStatistics() {
 }
 
 async function loadAttendanceTable() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     
     try {
         const allInterns = await getAllInterns();
@@ -976,12 +999,12 @@ async function loadAttendanceTable() {
                 <thead class="table-light">
                     <tr>
                         <th style="width: 5%"><input type="checkbox" class="form-check-input"></th>
-                        <th style="width: 13%">Intern</th>
+                        <th style="width: 18%">Intern</th>
                         <th style="width: 12%">Department</th>
                         <th style="width: 9%">Check In</th>
-                        <th style="width: 9%">Check Out</th>
+                        <th style="width: 12%">Check Out</th>
                         <th style="width: 9%">Status</th>
-                        <th style="width: 15%">This Week</th>
+                        <th style="width: 15%">Week</th>
                         <th style="width: 28%">Actions</th>
                     </tr>
                 </thead>
@@ -1030,19 +1053,27 @@ async function loadAttendanceTable() {
                         </div>
                     </td>
                     <td>${intern.department}</td>
-                    <td><span class="btn-light">${attendance.checkInTime || '-'}</span></td>
-                    <td><span class="btn-light">${attendance.checkOutTime || '-'}</span></td>
+                   <td>
+                    ${attendance.checkInTime 
+                        ? `<span class="btn-light">${attendance.checkInTime}</span>`
+                        : `<button class="btn btn-light btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>`
+                    }
+                    </td>
+                    <td>
+                        ${attendance.checkOutTime 
+                            ? `<span class="btn-light">${attendance.checkOutTime}</span>`
+                            : `<button class="btn btn-light btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>`
+                        }
+                    </td>
                     <td>${statusBadge}</td>
                     <td class="weekly-summary">${weeklySummaryCell}</td>
                     <td>
                         <div class="d-flex gap-1">
-                            <button class="btn btn-light btn-outline-secondary" ${checkInDisabled ? 'disabled' : ''} onclick="checkInAttendance(${intern.id})"><i class="fas fa-right-to-bracket"></i> In</button>
-                            <button class=btn btn-light btn-outline-secondary" ${checkOutDisabled ? 'disabled' : ''} onclick="checkOutAttendance(${intern.id})"><i class="fas fa-right-from-bracket"></i> Out</button>
-                            <button class=btn btn-light btn-view" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
                         </div>
                     </td>
-                </tr>
-            `;
+                                    </tr>
+                                `;
         });
         
         tableHTML += `
@@ -1085,28 +1116,150 @@ async function viewAttendanceDetails(internId) {
             return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
         const records = await getAttendanceByInternId(internId);
-        const todaysRecord = records.find(record => record.date === today);
-        const weekly = summarizeWeeklyAttendance(records, getWeekRangeStrings());
+        const weekRange = getWeekRangeStrings();
+        const weekly = summarizeWeeklyAttendance(records, weekRange);
 
-        showDetailsModal({
-            title: 'Attendance Details',
-            rows: [
-                { label: 'Name', value: `${intern.firstName} ${intern.lastName}` },
-                { label: 'Department', value: intern.department },
-                { label: 'Date', value: today },
-                { label: 'Status', value: todaysRecord?.status || '-' },
-                { label: 'Check In', value: todaysRecord?.checkInTime || '-' },
-                { label: 'Check Out', value: todaysRecord?.checkOutTime || '-' },
-                { label: 'This Week — Present', value: String(weekly.present) },
-                { label: 'This Week — Late', value: String(weekly.late) },
-                { label: 'This Week — Absent', value: String(weekly.absent) }
-            ]
+        const recordsByDate = {};
+        records.forEach(record => { recordsByDate[record.date] = record; });
+
+        const today = getLocalDateString();
+        const monday = new Date(`${weekRange.start}T00:00:00`);
+        const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+        // Build this week's Monday-Friday rows from whatever is already stored
+        // for each date (finalizeAndPrepareAttendanceForToday keeps every past
+        // day's record around instead of deleting it, so this is just a lookup).
+        const weekDays = WEEKDAY_LABELS.map((label, index) => {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + index);
+            const dateStr = getLocalDateString(date);
+            const record = recordsByDate[dateStr];
+
+            return {
+                label,
+                dateStr,
+                checkIn: record?.checkInTime || null,
+                checkOut: record?.checkOutTime || null,
+                status: record?.status && record.status !== '-' ? record.status : null,
+                isToday: dateStr === today,
+                isFuture: dateStr > today
+            };
         });
+
+        showAttendanceWeekModal({ intern, weekDays, weekly });
     } catch (error) {
         showAlert('Error loading attendance details: ' + error, 'error');
     }
+}
+
+/*
+  Weekly attendance table modal (Monday-Friday) for a single intern, shown
+  by the "View details" button on the Attendance page. Reuses the same
+  .custom-modal-overlay / .custom-modal / .details-modal shell as every
+  other details popup in the app, so it matches the existing look, and just
+  swaps the row-list body for a compact table plus a 3-up stat summary.
+*/
+function showAttendanceWeekModal({ intern, weekDays, weekly }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-modal-overlay';
+
+    const initials = getUserInitials(intern.firstName, intern.lastName);
+
+    const STATUS_LABEL = {
+        Present: 'present',
+        Late: 'late',
+        Absent: 'absent'
+    };
+
+    const formatShortDate = (dateStr) => new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric'
+    });
+
+    const rowsHTML = weekDays.map(day => {
+        let pillClass = 'upcoming';
+        let pillLabel = '—';
+
+        if (day.status && STATUS_LABEL[day.status]) {
+            pillClass = STATUS_LABEL[day.status];
+            pillLabel = day.status;
+        } else if (day.isToday) {
+            pillClass = 'pending';
+            pillLabel = 'Pending';
+        } else if (!day.isFuture) {
+            pillClass = 'absent';
+            pillLabel = 'Absent';
+        }
+
+        return `
+            <tr>
+                <td class="week-day-cell">
+                    <span class="week-day-label">${escapeHTML(day.label)}</span>
+                    <span class="week-day-date">${escapeHTML(formatShortDate(day.dateStr))}</span>
+                </td>
+                <td>${escapeHTML(day.checkIn || '-')}</td>
+                <td>${escapeHTML(day.checkOut || '-')}</td>
+                <td class="week-status-cell"><span class="week-status-pill ${pillClass}">${escapeHTML(pillLabel)}</span></td>
+            </tr>
+        `;
+    }).join('');
+
+    overlay.innerHTML = `
+        <div class="custom-modal details-modal">
+            <div class="custom-modal-header">
+                <div class="week-avatar">${escapeHTML(initials)}</div>
+                <div>
+                    <h3>${escapeHTML(`${intern.firstName} ${intern.lastName}`)}</h3>
+                    <p>${escapeHTML(intern.department || '-')}</p>
+                </div>
+            </div>
+            <div class="week-table-wrap">
+                <table class="week-attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Check in</th>
+                            <th>Check out</th>
+                            <th class="week-status-cell">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
+            <div class="week-stat-grid">
+                <div class="week-stat-card present">
+                    <span class="week-stat-label">Present</span>
+                    <span class="week-stat-value">${weekly.present}</span>
+                </div>
+                <div class="week-stat-card late">
+                    <span class="week-stat-label">Late</span>
+                    <span class="week-stat-value">${weekly.late}</span>
+                </div>
+                <div class="week-stat-card absent">
+                    <span class="week-stat-label">Absent</span>
+                    <span class="week-stat-value">${weekly.absent}</span>
+                </div>
+            </div>
+            <div class="custom-modal-actions">
+                <button type="button" class="custom-modal-confirm details-close-btn">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => {
+        overlay.classList.add('closing');
+        setTimeout(() => overlay.remove(), 180);
+    };
+
+    overlay.querySelector('.details-close-btn').addEventListener('click', close);
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+    });
 }
 
 function bindAttendanceSelectionControls() {
@@ -1363,7 +1516,7 @@ async function loadDashboardUsers() {
 
     try {
         const allInterns = (await getAllInterns()).sort((a, b) => b.id - a.id);
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const departmentCount = new Set(allInterns.map(intern => intern.department).filter(Boolean)).size;
         const addedTodayCount = allInterns.filter(intern => intern.dateAdded?.startsWith(today)).length;
 
@@ -1404,16 +1557,16 @@ async function loadDashboardUsers() {
                 <td>${escapeHTML(formatDashboardDate(intern.dateAdded))}</td>
                 <td>
                     <div class="table-actions">
-                        <button class=btn btn-light" type="button" title="View details" onclick="viewInternDetails(${intern.id})">
+                        <button class="btn btn-light" type="button" title="View details" onclick="viewInternDetails(${intern.id})">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-light" type="button" title="Update intern" onclick="editIntern(${intern.id})">
+                        <button class="btn btn-primary" type="button" title="Update intern" onclick="editIntern(${intern.id})">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="btn btn-light" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
+                        <button class="btn btn-primary" type="button" title="Assign supervisor" onclick="assignInternSupervisor(${intern.id})">
                             <i class="fas fa-user-plus"></i>
                         </button>
-                        <button class="btn btn-light" type="button" title="Delete intern" onclick="removeIntern(${intern.id})">
+                        <button class="btn btn-danger" type="button" title="Delete intern" onclick="removeIntern(${intern.id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1425,7 +1578,7 @@ async function loadDashboardUsers() {
             <table class="table table-hover dashboard-user-table">
                 <thead class="table-light">
                     <tr>
-                        <th>User</th>
+                        <th>Name</th>
                         <th>Department</th>
                         <th>School</th>
                         <th>Phone</th>
@@ -1488,7 +1641,7 @@ async function editIntern(internId) {
                 { label: 'First name', name: 'firstName', value: intern.firstName || '' },
                 { label: 'Last name', name: 'lastName', value: intern.lastName || '' },
                 { label: 'Email', name: 'email', value: intern.email || '' },
-                { label: 'Phone', name: 'phone', value: intern.phone || '' },
+                { label: 'Phone', name: 'phone', value: intern.phone || '', maxlength: 9, pattern: '\\d{9}', inputmode: 'numeric', helpText: 'Exactly 9 digits' },
                 { label: 'School', name: 'school', value: intern.school || '' },
                 {
                     label: 'Department',
@@ -1523,7 +1676,7 @@ async function editIntern(internId) {
             return;
         }
         if (!isValidPhone(values.phone)) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
+            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
             return;
         }
 
@@ -1670,7 +1823,7 @@ async function loadSupervisorsPage() {
             }
             return counts;
         }, {});
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const departmentCount = new Set(supervisors.map(supervisor => supervisor.department).filter(Boolean)).size;
         const addedTodayCount = supervisors.filter(supervisor => supervisor.dateAdded?.startsWith(today)).length;
 
@@ -1712,26 +1865,27 @@ async function loadSupervisorsPage() {
                 <td>${escapeHTML(supervisor.department)}</td>
                 <td>${assignedInternCounts[supervisor.id] || 0}</td>
                 <td>${escapeHTML(formatDashboardDate(supervisor.dateAdded))}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="btn btn-light" type="button" title="View details" onclick="viewSupervisorDetails(${supervisor.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-light" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <button class="btn btn-light" type="button" title="${isActive ? 'Assign supervisor to intern' : 'Inactive supervisors cannot be assigned'}" onclick="assignSupervisorToIntern(${supervisor.id})" ${isActive ? '' : 'disabled'}>
-                            <i class="fas fa-user-plus"></i>
-                        </button>
-                        <button class="btn btn-light" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
+               
                 <td>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" role="switch" id="switchCheck${supervisor.id}" ${isActive ? 'checked' : ''} onchange="toggleSupervisorStatus(${supervisor.id}, this.checked)">
                         <label class="form-check-label" for="switchCheck${supervisor.id}">${escapeHTML(status)}</label>
+                    </div>
+                </td>
+                 <td>
+                    <div class="table-actions">
+                        <button class="btn btn-light" type="button" title="View details" onclick="viewSupervisorDetails(${supervisor.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" type="button" title="Update supervisor" onclick="editSupervisor(${supervisor.id})">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn btn-primary" type="button" title="${isActive ? 'Assign supervisor to intern' : 'Inactive supervisors cannot be assigned'}" onclick="assignSupervisorToIntern(${supervisor.id})" ${isActive ? '' : 'disabled'}>
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        <button class="btn btn-danger" type="button" title="Delete supervisor" onclick="removeSupervisor(${supervisor.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -1742,14 +1896,15 @@ async function loadSupervisorsPage() {
             <table class="table table-hover dashboard-user-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Supervisor</th>
+                        <th>Name</th>
                         <th>Gender</th>
                         <th>Phone</th>
                         <th>Department</th>
                         <th>Interns</th>
                         <th>Date</th>
-                        <th>Action</th>
                         <th>Status</th>
+                        <th>Action</th>
+                        
                     </tr>
                 </thead>
                 <tbody>
@@ -1812,7 +1967,7 @@ async function editSupervisor(supervisorId) {
                 { label: 'First name', name: 'firstName', value: supervisor.firstName || '' },
                 { label: 'Last name', name: 'lastName', value: supervisor.lastName || '' },
                 { label: 'Email', name: 'email', value: supervisor.email || '' },
-                { label: 'Phone', name: 'phone', value: supervisor.phone || '' },
+                { label: 'Phone', name: 'phone', value: supervisor.phone || '', maxlength: 9, pattern: '\\d{9}', inputmode: 'numeric', helpText: 'Exactly 9 digits' },
                 { label: 'Gender',
                   name: 'gender',
                     type: 'select',
@@ -1853,7 +2008,7 @@ async function editSupervisor(supervisorId) {
             return;
         }
         if (!isValidPhone(values.phone)) {
-            showAlert('Please enter a valid phone number (at least 10 digits).', 'error');
+            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
             return;
         }
 
@@ -2635,7 +2790,7 @@ async function saveSettingsForm(event) {
 function determineAttendanceStatus(date) {
     const totalMinutes = date.getHours() * 60 + date.getMinutes();
     const presentCutoff = 7 * 60;        // 7:00 AM
-    const absentCutoff = 13 * 60 + 25;   // 1:25 PM
+    const absentCutoff = 16 * 60 + 30;   // 1:25 PM
 
     if (totalMinutes < presentCutoff) {
         return 'Present';
@@ -2662,7 +2817,7 @@ async function checkInAttendance(internId) {
             return;
         }
 
-        const today = now.toISOString().split('T')[0];
+        const today = getLocalDateString(now);
         const intern = await getInternById(internId);
         const existingRecords = await getAttendanceByInternId(internId);
         const existingRecord = existingRecords.find(record => record.date === today);
@@ -2715,7 +2870,7 @@ async function checkOutAttendance(internId) {
             return;
         }
 
-        const today = now.toISOString().split('T')[0];
+        const today = getLocalDateString(now);
         const existingRecords = await getAttendanceByInternId(internId);
         const existingRecord = existingRecords.find(record => record.date === today);
 
@@ -2909,4 +3064,7 @@ function logoutAdmin() {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     window.location.href = 'login.html';
 }
+
+const dropdownElementList = document.querySelectorAll('.dropdown-toggle')
+const dropdownList = [...dropdownElementList].map(dropdownToggleEl => new bootstrap.Dropdown(dropdownToggleEl))
 
