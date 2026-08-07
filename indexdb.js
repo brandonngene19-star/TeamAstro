@@ -175,7 +175,7 @@ function showCustomConfirm(message, options = {}) {
   display. Unlike showCustomModal, this has a single "Close" button since
   there's nothing to submit.
 */
-function showDetailsModal({ title, subtitle = '', rows = [] }) {
+function showDetailsModal({ title, subtitle = '', rows = [], onExport = null, exportText = 'Export' }) {
     const overlay = document.createElement('div');
     overlay.className = 'custom-modal-overlay';
 
@@ -193,6 +193,13 @@ function showDetailsModal({ title, subtitle = '', rows = [] }) {
         }).join('')
         : `<p class="details-empty">No details available.</p>`;
 
+    // The export button is opt-in via onExport, so this stays a plain "Close"
+    // popup everywhere else (supervisor/performance details) unless a caller
+    // explicitly hands us something to export.
+    const exportButtonHTML = typeof onExport === 'function'
+        ? `<button type="button" class="custom-modal-cancel details-export-btn"><i class="fas fa-download"></i> ${escapeHTML(exportText)}</button>`
+        : '';
+
     overlay.innerHTML = `
         <div class="custom-modal details-modal">
             <div class="custom-modal-header">
@@ -207,7 +214,8 @@ function showDetailsModal({ title, subtitle = '', rows = [] }) {
             <div class="details-modal-body">
                 ${rowsHTML}
             </div>
-            <div class="custom-modal-actions">
+            <div class="custom-modal-actions${typeof onExport === 'function' ? ' has-export' : ''}">
+                ${exportButtonHTML}
                 <button type="button" class="custom-modal-confirm details-close-btn">Close</button>
             </div>
         </div>
@@ -224,6 +232,11 @@ function showDetailsModal({ title, subtitle = '', rows = [] }) {
     overlay.addEventListener('click', (event) => {
         if (event.target === overlay) close();
     });
+
+    const exportBtn = overlay.querySelector('.details-export-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => onExport());
+    }
 }
 
 /* 
@@ -971,14 +984,6 @@ async function loadAttendanceTable() {
             }
         });
 
-        // Full history per intern, used to compute the "This Week" tally.
-        const recordsByIntern = {};
-        allAttendance.forEach(record => {
-            if (!recordsByIntern[record.internId]) recordsByIntern[record.internId] = [];
-            recordsByIntern[record.internId].push(record);
-        });
-        const weekRange = getWeekRangeStrings();
-
         const statusFilterEl = document.getElementById('attendanceStatusFilter');
         const searchInputEl = document.getElementById('attendanceSearchInput');
         const statusFilter = statusFilterEl ? statusFilterEl.value : 'all';
@@ -1004,7 +1009,6 @@ async function loadAttendanceTable() {
                         <th style="width: 9%">Check In</th>
                         <th style="width: 12%">Check Out</th>
                         <th style="width: 9%">Status</th>
-                        <th style="width: 15%">Week</th>
                         <th style="width: 28%">Actions</th>
                     </tr>
                 </thead>
@@ -1033,13 +1037,6 @@ async function loadAttendanceTable() {
             const checkInDisabled = windowClosed || hasCheckedIn;
             const checkOutDisabled = windowClosed || !hasCheckedIn || hasCheckedOut;
 
-            const weekly = summarizeWeeklyAttendance(recordsByIntern[intern.id] || [], weekRange);
-            const weeklySummaryCell = `
-                <span class="week-badge week-present" title="Present this week">P ${weekly.present}</span>
-                <span class="week-badge week-late" title="Late this week">L ${weekly.late}</span>
-                <span class="week-badge week-absent" title="Absent this week">A ${weekly.absent}</span>
-            `;
-
             tableHTML += `
                 <tr>
                     <td><input type="checkbox" class="form-check-input intern-select" value="${intern.id}"></td>
@@ -1066,7 +1063,6 @@ async function loadAttendanceTable() {
                         }
                     </td>
                     <td>${statusBadge}</td>
-                    <td class="weekly-summary">${weeklySummaryCell}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
@@ -1611,6 +1607,7 @@ async function viewInternDetails(internId) {
             title:'Intern Details',
             rows: [       
                 { label: 'Name', value: `${intern.firstName} ${intern.lastName}` },
+                { label: 'Intern ID', value: intern.internId },
                 { label: 'Email', value: intern.email },
                 { label: 'Phone', value: intern.phone },
                 { label: 'Department', value: intern.department },
@@ -1618,10 +1615,52 @@ async function viewInternDetails(internId) {
                 { label: 'Gender', value: intern.gender },
                 { label: 'Supervisor', value: intern.supervisorName || 'Unassigned' },
                 { label: 'Date', value: formatDashboardDate(intern.dateAdded) }
-            ]
+            ],
+            exportText: 'Export Details',
+            onExport: () => exportInternDetailsToCSV(intern)
         });
     } catch (error) {
         showAlert('Error loading intern details: ' + error, 'error');
+    }
+}
+
+/*
+  Exports every field for a single intern (the same information shown in the
+  "Intern Details" popup) as its own standalone CSV. This is separate from
+  exportToCSV(), which dumps every intern into one bulk file — the Attendance
+  page's Export button keeps using that bulk exporter unchanged.
+*/
+function exportInternDetailsToCSV(intern) {
+    try {
+        const detailRows = [
+            ['Name', `${intern.firstName} ${intern.lastName}`],
+            ['Intern ID', intern.internId],
+            ['Email', intern.email],
+            ['Phone', intern.phone],
+            ['Department', intern.department],
+            ['School', intern.school],
+            ['Gender', intern.gender],
+            ['Supervisor', intern.supervisorName || 'Unassigned'],
+            ['Date Added', formatDashboardDate(intern.dateAdded)]
+        ];
+
+        let csv = ['Field', 'Value'].map(escapeCSVValue).join(',') + '\n';
+        detailRows.forEach(([label, value]) => {
+            csv += [label, value].map(escapeCSVValue).join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeName = `${intern.firstName}_${intern.lastName}`.replace(/\s+/g, '_');
+        a.download = `intern_${safeName}_details.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showAlert('Intern details exported successfully.', 'success');
+    } catch (error) {
+        showAlert('Error exporting intern details: ' + error, 'error');
     }
 }
 
