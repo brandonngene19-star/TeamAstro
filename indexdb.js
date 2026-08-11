@@ -511,10 +511,6 @@ function getAttendanceByInternId(internId) {
     });
 }
 
-function getAttendanceById(id) {
-    return dbGet('attendance', id);
-}
-
 function addPerformance(record) {
     return dbAdd('performance', record);
 }
@@ -569,6 +565,17 @@ function escapeCSVValue(value) {
     return stringValue;
 }
 
+// Phone numbers are plain digit strings (e.g. "0612345678"). Written as a
+// bare CSV value, spreadsheet apps auto-detect it as a number on open and
+// silently drop any leading zero (or switch to scientific notation for
+// longer digit strings) — the number itself never changes, just how Excel/
+// Sheets chooses to display it. Wrapping it as an ="..." text formula forces
+// it to stay literal text so every digit, including a leading zero, survives.
+function escapeCSVPhoneValue(value) {
+    const stringValue = value === null || value === undefined ? '' : String(value);
+    return `="${stringValue.replace(/"/g, '""')}"`;
+}
+
 /* 
   CSV Exporter
   Creates a plain text file structured as Comma Separated Values (CSV) in memory using Blobs, 
@@ -607,8 +614,23 @@ function exportToCSV(storeName) {
             const keys = Object.keys(data[0]).filter(key => !ID_FIELDS.has(key) && !excluded.has(key));
             let csv = ['No.', ...keys].map(escapeCSVValue).join(',') + '\n';
 
+            // Fields that are only ever filled in for a subset of rows (e.g. an
+            // intern who was never excused has no originalStatus/excuseReason/
+            // excusedAt) show up as a blank cell in the spreadsheet, which is easy
+            // to misread as missing data versus "not applicable". Fill those with
+            // a literal "-" instead of leaving them empty.
+            const DASH_IF_EMPTY_FIELDS = {
+                attendance: new Set(['originalStatus', 'excuseReason', 'excusedAt'])
+            };
+            const dashIfEmpty = DASH_IF_EMPTY_FIELDS[storeName] || new Set();
+
             data.forEach((item, index) => {
-                const values = [index + 1, ...keys.map(key => escapeCSVValue(item[key]))];
+                const values = [index + 1, ...keys.map(key => {
+                    const rawValue = (dashIfEmpty.has(key) && (item[key] === null || item[key] === undefined || item[key] === ''))
+                        ? '-'
+                        : item[key];
+                    return key === 'phone' ? escapeCSVPhoneValue(rawValue) : escapeCSVValue(rawValue);
+                })];
                 csv += values.join(',') + '\n';
             });
 
@@ -787,25 +809,6 @@ function handleFormSubmit(event, formType) {
     }
 }
 
-function parseTimeToMinutes(timeStr) {
-    const match = /^(\d{1,2}):([0-5]\d)\s?(AM|PM)$/i.exec(String(timeStr).trim());
-    if (!match) return null;
-
-    let hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    const meridiem = match[3].toUpperCase();
-
-    if (hours < 1 || hours > 12) return null;
-
-    if (meridiem === 'AM') {
-        if (hours === 12) hours = 0;
-    } else if (hours !== 12) {
-        hours += 12;
-    }
-
-    return hours * 60 + minutes;
-}
-
 function generateInternID() {
     const year = new Date().getFullYear();
     const randomNum = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
@@ -926,12 +929,13 @@ function getWeekRangeStrings(referenceDate = new Date()) {
 
 // Tallies how many times an intern was Present / Late / Absent within a week range.
 function summarizeWeeklyAttendance(records, weekRange) {
-    const summary = { present: 0, late: 0, absent: 0 };
+    const summary = { present: 0, late: 0, absent: 0, excused: 0 };
     records.forEach(record => {
         if (record.date < weekRange.start || record.date > weekRange.end) return;
         if (record.status === 'Present') summary.present++;
         else if (record.status === 'Late') summary.late++;
         else if (record.status === 'Absent') summary.absent++;
+        else if (record.status === 'Excused') summary.excused++;
     });
     return summary;
 }
@@ -948,6 +952,7 @@ async function loadAttendanceStatistics() {
         const presentCount = todayAttendance.filter(a => a.status === 'Present').length;
         const lateCount = todayAttendance.filter(a => a.status === 'Late').length;
         const absentCount = todayAttendance.filter(a => a.status === 'Absent').length;
+        const excusedCount = todayAttendance.filter(a => a.status === 'Excused').length;
         
         const totalElement = document.getElementById('totalInterns');
         if (totalElement) totalElement.textContent = totalCount;
@@ -960,8 +965,11 @@ async function loadAttendanceStatistics() {
         
         const absentElement = document.getElementById('absentToday');
         if (absentElement) absentElement.textContent = absentCount;
+
+        const excusedElement = document.getElementById('excusedToday');
+        if (excusedElement) excusedElement.textContent = excusedCount;
         
-        console.log(`📊 Attendance Stats - Total: ${totalCount}, Present: ${presentCount}, Late: ${lateCount}, Absent: ${absentCount}`);
+        console.log(`📊 Attendance Stats - Total: ${totalCount}, Present: ${presentCount}, Late: ${lateCount}, Absent: ${absentCount}, Excused: ${excusedCount}`);
     } catch (error) {
         console.error('❌ Error loading attendance statistics:', error);
     }
@@ -1024,18 +1032,32 @@ async function loadAttendanceTable() {
                 status: '-',
             };
             
-            const statusColor = attendance.status === 'Present' ? 'secondary' :
-                                attendance.status === 'Late' ? 'secondary' :
-                                attendance.status === 'Absent' ? 'danger' : 'secondary';
+            const statusColor = attendance.status === 'Present' ? 'success' :
+                                attendance.status === 'Late' ? 'warning' :
+                                attendance.status === 'Absent' ? 'danger' :
+                                attendance.status === 'Excused' ? 'excused' : 'secondary';
             
             const statusLockIcon = attendance.statusLockedAt ? '<i class="fas fa-lock status-lock-icon" title="Status locked"></i>' : '';
 
-            const statusBadge = `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}</span>`;
+            const excuseReasonIcon = attendance.status === 'Excused' && attendance.excuseReason
+                ? `<i class="fas fa-circle-info excuse-reason-icon" title="${escapeHTML(attendance.excuseReason)}"></i>`
+                : '';
+
+            const statusBadge = `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}${excuseReasonIcon}</span>`;
 
             const hasCheckedIn = Boolean(attendance.checkInTime);
             const hasCheckedOut = Boolean(attendance.checkOutTime);
             const checkInDisabled = windowClosed || hasCheckedIn;
             const checkOutDisabled = windowClosed || !hasCheckedIn || hasCheckedOut;
+
+            // Excusing is available any time attendance isn't already "Present" or
+            // "Excused" — including before check-in, so a pre-approved absence can
+            // be recorded ahead of time instead of only after the fact.
+            const excuseActionHTML = attendance.status === 'Excused'
+                ? `<button class="btn btn-light" type="button" title="Remove excused status" onclick="revertExcuse(${intern.id})"><i class="fas fa-rotate-left"></i></button>`
+                : attendance.status !== 'Present'
+                    ? `<button class="btn btn-light" type="button" title="Mark as excused" onclick="excuseAttendance(${intern.id})"><i class="fas fa-notes-medical"></i></button>`
+                    : '';
 
             tableHTML += `
                 <tr>
@@ -1066,6 +1088,7 @@ async function loadAttendanceTable() {
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
+                            ${excuseActionHTML}
                         </div>
                     </td>
                                     </tr>
@@ -1138,6 +1161,7 @@ async function viewAttendanceDetails(internId) {
                 checkIn: record?.checkInTime || null,
                 checkOut: record?.checkOutTime || null,
                 status: record?.status && record.status !== '-' ? record.status : null,
+                excuseReason: record?.excuseReason || null,
                 isToday: dateStr === today,
                 isFuture: dateStr > today
             };
@@ -1165,7 +1189,8 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
     const STATUS_LABEL = {
         Present: 'present',
         Late: 'late',
-        Absent: 'absent'
+        Absent: 'absent',
+        Excused: 'excused'
     };
 
     const formatShortDate = (dateStr) => new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
@@ -1188,6 +1213,8 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
             pillLabel = 'Absent';
         }
 
+        const pillTitle = day.excuseReason ? ` title="${escapeHTML(day.excuseReason)}"` : '';
+
         return `
             <tr>
                 <td class="week-day-cell">
@@ -1196,7 +1223,7 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
                 </td>
                 <td>${escapeHTML(day.checkIn || '-')}</td>
                 <td>${escapeHTML(day.checkOut || '-')}</td>
-                <td class="week-status-cell"><span class="week-status-pill ${pillClass}">${escapeHTML(pillLabel)}</span></td>
+                <td class="week-status-cell"><span class="week-status-pill ${pillClass}"${pillTitle}>${escapeHTML(pillLabel)}</span></td>
             </tr>
         `;
     }).join('');
@@ -1237,6 +1264,10 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
                 <div class="week-stat-card absent">
                     <span class="week-stat-label">Absent</span>
                     <span class="week-stat-value">${weekly.absent}</span>
+                </div>
+                <div class="week-stat-card excused">
+                    <span class="week-stat-label">Excused</span>
+                    <span class="week-stat-value">${weekly.excused}</span>
                 </div>
             </div>
             <div class="custom-modal-actions">
@@ -1646,7 +1677,8 @@ function exportInternDetailsToCSV(intern) {
 
         let csv = ['Field', 'Value'].map(escapeCSVValue).join(',') + '\n';
         detailRows.forEach(([label, value]) => {
-            csv += [label, value].map(escapeCSVValue).join(',') + '\n';
+            const escapedValue = label === 'Phone' ? escapeCSVPhoneValue(value) : escapeCSVValue(value);
+            csv += [escapeCSVValue(label), escapedValue].join(',') + '\n';
         });
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -2867,7 +2899,13 @@ async function checkInAttendance(internId) {
         }
 
         const checkInTime = formatExactTime(now);
-        const status = determineAttendanceStatus(now);
+        // If an admin already excused this intern for today (e.g. a pre-approved
+        // doctor's appointment), a late check-in shouldn't silently overwrite
+        // that with "Late"/"Absent" again — keep the excused status and just
+        // record the real check-in time for reference.
+        const status = (existingRecord && existingRecord.status === 'Excused')
+            ? 'Excused'
+            : determineAttendanceStatus(now);
 
         const recordToSave = {
             ...(existingRecord || {
@@ -2935,6 +2973,115 @@ async function checkOutAttendance(internId) {
         await loadAttendanceTable();
     } catch (error) {
         showAlert('Error checking out: ' + error, 'error');
+    }
+}
+
+/*
+  EXCUSED ATTENDANCE
+  Auto-computed status (Present/Late/Absent) has no way to account for a
+  legitimate reason — a doctor's appointment, a supervisor-approved errand,
+  etc. This lets an admin override today's record with "Excused" plus a
+  required reason, without deleting the original clock-based status: it's
+  kept as originalStatus so nothing is lost, and the record can be reverted.
+  Works whether the intern has already checked in (Late/Absent) or hasn't
+  checked in at all yet (a pre-approved absence, status still '-').
+*/
+async function excuseAttendance(internId) {
+    try {
+        const intern = await getInternById(internId);
+        const today = getLocalDateString();
+        const existingRecords = await getAttendanceByInternId(internId);
+        const existingRecord = existingRecords.find(record => record.date === today);
+
+        if (existingRecord && existingRecord.status === 'Excused') {
+            showAlert('This intern is already marked as excused for today.', 'info', 3000);
+            return;
+        }
+
+        const currentStatus = existingRecord && existingRecord.status && existingRecord.status !== '-'
+            ? existingRecord.status
+            : 'Absent';
+
+        const result = await showCustomModal({
+            title: 'Mark as Excused',
+            message: `${intern ? intern.firstName + ' ' + intern.lastName : 'This intern'} is currently "${currentStatus}" for today. Record why this is excused (e.g. doctor's appointment, supervisor-approved errand) — this note is kept with the record.`,
+            fields: [
+                { name: 'reason', label: 'Reason', placeholder: "e.g. Doctor's appointment, approved by supervisor" }
+            ],
+            confirmText: 'Mark Excused'
+        });
+
+        if (!result) return; // cancelled
+
+        const reason = (result.reason || '').trim();
+        if (!reason) {
+            showAlert('Please provide a reason before marking as excused.', 'warning');
+            return;
+        }
+
+        const recordToSave = {
+            ...(existingRecord || {
+                id: Date.now(),
+                internId,
+                internName: intern ? `${intern.firstName} ${intern.lastName}` : '',
+                internId_code: intern ? intern.internId : '',
+                email: intern ? intern.email : '',
+                department: intern ? intern.department : '',
+                date: today,
+                checkInTime: null,
+                checkOutTime: null,
+                createdAt: new Date().toISOString()
+            }),
+            originalStatus: currentStatus,
+            status: 'Excused',
+            excuseReason: reason,
+            excusedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (existingRecord) {
+            await dbPut('attendance', recordToSave);
+        } else {
+            await addAttendance(recordToSave);
+        }
+
+        showAlert(`Marked as Excused: ${reason}`, 'success', 4000);
+        await loadAttendanceStatistics();
+        await loadAttendanceTable();
+    } catch (error) {
+        showAlert('Error marking attendance as excused: ' + error, 'error');
+    }
+}
+
+// Undo an excused mark, restoring whatever status was in effect before it
+// (Late/Absent/Present), in case an admin applied it by mistake.
+async function revertExcuse(internId) {
+    try {
+        const today = getLocalDateString();
+        const existingRecords = await getAttendanceByInternId(internId);
+        const existingRecord = existingRecords.find(record => record.date === today);
+
+        if (!existingRecord || existingRecord.status !== 'Excused') return;
+
+        const confirmed = await showCustomConfirm(
+            'Remove the excused mark and restore the original attendance status for today?',
+            { title: 'Remove Excuse', confirmText: 'Remove' }
+        );
+        if (!confirmed) return;
+
+        await dbPut('attendance', {
+            ...existingRecord,
+            status: existingRecord.originalStatus || 'Absent',
+            excuseReason: null,
+            excusedAt: null,
+            updatedAt: new Date().toISOString()
+        });
+
+        showAlert('Excused status removed.', 'success', 3000);
+        await loadAttendanceStatistics();
+        await loadAttendanceTable();
+    } catch (error) {
+        showAlert('Error removing excused status: ' + error, 'error');
     }
 }
 

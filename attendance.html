@@ -103,6 +103,7 @@
                                 <option value="Present">Present</option>
                                 <option value="Late">Late</option>
                                 <option value="Absent">Absent</option>
+                                <option value="Excused">Excused</option>
                             </select>
                             <input class="filter-search" type="text" id="attendanceSearchInput" placeholder="Search by name or department...">
                             <button class="filter-btn" type="button" onclick="applyAttendanceFilters()">Filter</button>
@@ -150,6 +151,16 @@
                                 <h4>Absent Today</h4>
                                 <h2 id="absentToday">0</h2>
                                 <small>Not checked in</small>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="icon purple">📋</div>
+
+                            <div class="stat-info">
+                                <h4>Excused Today</h4>
+                                <h2 id="excusedToday">0</h2>
+                                <small>Approved late/absence</small>
                             </div>
                         </div>
 

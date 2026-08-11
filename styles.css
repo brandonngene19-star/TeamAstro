@@ -245,12 +245,10 @@
 /* modal card */
 .custom-modal {
     width: min(460px, 100%);
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
     background: white;
     border-radius: 12px;
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-    padding: 18px 20px;
+    padding: 22px;
     animation: modal-slide-up 0.22s ease-out;
 }
 
@@ -264,19 +262,19 @@
 .custom-modal-header {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 14px;
+    margin-bottom: 18px;
 }
 
 .custom-modal-icon {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .custom-modal-icon.info {
@@ -290,31 +288,30 @@
 }
 
 .custom-modal h3 {
-    margin: 0 0 3px;
+    margin: 0 0 6px;
     color: var(--text-main);
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
 .custom-modal p {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.9rem;
-    line-height: 1.35;
+    font-size: 0.95rem;
+    line-height: 1.45;
 }
 
 .custom-modal-form {
     display: grid;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 14px;
+    margin-bottom: 20px;
 }
 
 .custom-modal-field {
     display: grid;
-    gap: 4px;
+    gap: 7px;
     color: var(--text-main);
     font-weight: 600;
-    font-size: 0.9rem;
 }
 
 .custom-modal-field input,
@@ -322,7 +319,7 @@
     width: 100%;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     color: var(--text-main);
     background: white;
     font: inherit;
@@ -366,7 +363,7 @@
 .custom-modal-actions button {
     border: none;
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 9px 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -383,10 +380,6 @@
 }
 
 .custom-modal-confirm i {
-    margin-right: 6px;
-}
-
-.details-export-btn i {
     margin-right: 6px;
 }
 
@@ -543,8 +536,7 @@
         min-width: 0;
     }
 
-    .settings-grid,
-    .dashboard-grid {
+    .settings-grid {
         grid-template-columns: 1fr;
     }
 
@@ -1001,31 +993,6 @@ header {
     color: white;
 }
 
-/* sticky logout link */
-.logout {
-    margin-top: auto;
-    width: 100%;
-    padding: 8px 16px 0;
-}
-
-.logout-link {
-    color: #94a3b8;
-    background-color: transparent;
-}
-
-.logout-link i {
-    color: #94a3b8;
-}
-
-.logout-link:hover {
-    background-color: var(--bg-sidebar-hover);
-    color: white;
-}
-
-.logout-link:hover i {
-    color: white;
-}
-
 /* main page header & body */
 .content-header {
     margin-bottom: 24px;
@@ -1049,19 +1016,6 @@ header {
     color: var(--text-muted);
     font-size: 1rem;
     line-height: 1.6;
-}
-
-.mb-3 {
-    margin-top: 70px;
-}
-
-.mb-3 label {
-    font-size: 20px;
-    font-weight: 700;
-}
-
-.col-12 {
-    margin-top: 20px;
 }
 
 .btns {
@@ -1143,12 +1097,6 @@ header {
     color: white;
     cursor: not-allowed;
     opacity: 0.7;
-}
-
-.table-actions .btn-light:disabled {
-    cursor: not-allowed;
-    opacity: 0.45;
-    pointer-events: none;
 }
 
 .btn-delete-selected i {
@@ -1260,6 +1208,11 @@ header {
     color: #EF4444;
 }
 
+.purple {
+    background: #F5F3FF;
+    color: #7C3AED;
+}
+
 .stat-info h4 {
     margin: 0;
     color: #555;
@@ -1344,15 +1297,6 @@ header {
     margin: 0 0 8px;
 }
 
-/* supervisor registration component */
-.supervisor-registration-form {
-    margin-top: 24px;
-    padding: 20px;
-    border: 1px solid var(--border-color-muted);
-    border-radius: 8px;
-    background: #f8fafc;
-}
-
 .supervisor-tabs {
     display: inline-flex;
     gap: 6px;
@@ -1396,17 +1340,6 @@ header {
     align-items: center;
     justify-content: center;
     padding: 0;
-}
-
-.btn-assign {
-    background: var(--color-success);
-    border: none;
-    color: white;
-}
-
-.btn-assign:hover {
-    background: #059669;
-    color: white;
 }
 
 .group-tools {
@@ -1707,36 +1640,6 @@ header {
     opacity: 0.9;
 }
 
-/* weekly Present/Late/Absent tally shown in the attendance table */
-.weekly-summary {
-    white-space: nowrap;
-}
-
-.week-badge {
-    display: inline-block;
-    margin-right: 4px;
-    padding: 3px 7px;
-    border-radius: 6px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-}
-
-.week-badge.week-present {
-    background: #ecfdf5;
-    color: #047857;
-}
-
-.week-badge.week-late {
-    background: #fff7ed;
-    color: #c2410c;
-}
-
-.week-badge.week-absent {
-    background: #fef2f2;
-    color: #b91c1c;
-}
-
 /* user role chip */
 .role-badge {
     display: inline-flex;
@@ -1774,10 +1677,7 @@ header {
     color: #047857;
 }
 
-.btn-secondary:hover{
-    cursor: pointer;
 
-}
 
 .performance-score.good {
     background: #eff6ff;
@@ -1855,12 +1755,18 @@ header {
     color: white;
 }
 
-/* button sizing & variants */
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 0.875rem;
+.badge.bg-excused {
+    background-color: #7C3AED !important;
+    color: white;
 }
 
+/* small note icon shown on an excused status badge, hover to read the reason */
+.excuse-reason-icon {
+    margin-left: 4px;
+    cursor: help;
+}
+
+/* button sizing & variants */
 .btn-primary {
     background-color: var(--primary-color);
     border: none;
@@ -1913,18 +1819,6 @@ header {
     margin-top: 0.5px;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 * {
   box-sizing: border-box;
 }
@@ -1957,7 +1851,7 @@ img, video, table {
 
 .details-section-title {
     margin: 16px 0 6px;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -1972,9 +1866,9 @@ img, video, table {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    padding: 10px 0;
+    padding: 9px 0;
     border-bottom: 1px solid var(--border-color-muted);
-    font-size: 1.05rem;
+    font-size: 0.92rem;
 }
 
 .details-row:last-child {
@@ -1984,10 +1878,6 @@ img, video, table {
 .details-row span:first-child {
     color: var(--text-muted);
     font-weight: 600;
-}
-
-.details-modal .custom-modal-actions.has-export {
-    justify-content: space-between;
 }
 
 .details-row span:last-child {
@@ -2001,99 +1891,6 @@ img, video, table {
     color: var(--text-muted);
     font-size: 0.88rem;
     text-align: center;
-}
-
-/* scrollable list of past records (attendance days / weekly reviews) */
-.history-list {
-    display: grid;
-    gap: 10px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.history-item {
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 12px 14px;
-    background: var(--bg-body);
-}
-
-.history-item-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 6px;
-    font-weight: 700;
-    color: var(--text-main);
-    font-size: 0.92rem;
-}
-
-.history-item-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 0.82rem;
-    color: var(--text-muted);
-}
-
-.history-item-remarks {
-    margin-top: 6px;
-    font-size: 0.85rem;
-    color: var(--text-main);
-}
-
-/* "See details" / "See history" eye + clock buttons */
-.btn-view {
-    background: #eef2ff;
-    border: none;
-    color: var(--primary-color);
-}
-
-.btn-view:hover {
-    background: #e0e7ff;
-    color: var(--primary-color);
-}
-
-/* ============================================================
-   Check In / Check Out buttons (attendance table)
-   ============================================================ */
-.btn-checkin,
-.btn-checkout {
-    width: auto;
-    height: 34px;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-checkin {
-    background: var(--color-success);
-    color: white;
-}
-
-.btn-checkin:hover {
-    background: #059669;
-    color: white;
-}
-
-.btn-checkout {
-    background: #2563eb;
-    color: white;
-}
-
-.btn-checkout:hover {
-    background: #1d4ed8;
-    color: white;
 }
 
 /* ============================================================
@@ -2188,6 +1985,11 @@ img, video, table {
     color: var(--color-danger);
 }
 
+.week-status-pill.excused {
+    background: #F5F3FF;
+    color: #7C3AED;
+}
+
 .week-status-pill.pending,
 .week-status-pill.upcoming {
     background: var(--border-color-muted);
@@ -2196,7 +1998,7 @@ img, video, table {
 
 .week-stat-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
 }
 
@@ -2231,4 +2033,8 @@ img, video, table {
 
 .week-stat-card.absent .week-stat-value {
     color: var(--color-danger);
+}
+
+.week-stat-card.excused .week-stat-value {
+    color: #7C3AED;
 }
