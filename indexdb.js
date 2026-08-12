@@ -649,163 +649,125 @@ function exportToCSV(storeName) {
     });
 }
 
-function handleFormSubmit(event, formType) {
+async function handleInternFormSubmit(event) {
     event.preventDefault();
+    const firstName = document.getElementById('validationCustom01')?.value.trim();
+    const lastName = document.getElementById('validationCustom02')?.value.trim();
+    const email = document.getElementById('validationCustomUsername')?.value.trim();
+    const phone = document.getElementById('validationCustom03')?.value.trim();
+    const school = document.getElementById('validationCustom06')?.value.trim();
+    const department = document.getElementById('validationCustom04')?.value;
+    const gender = document.getElementById('validationCustom05')?.value;
 
+    if (!firstName || !lastName || !email || !phone || !school || !department || !gender) {
+        showAlert('Please fill all intern registration fields.', 'warning');
+        return;
+    }
+    if (!NAME_REGEX.test(firstName) || !NAME_REGEX.test(lastName)) {
+        showAlert('Names can only contain letters and spaces.', 'error');
+        return;
+    }
+    if (!EMAIL_REGEX.test(email)) {
+        showAlert('Please enter a valid email address.', 'error');
+        return;
+    }
+    if (!isValidPhone(phone)) {
+        showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
+        return;
+    }
+
+    try {
+        const exists = await emailExistsInStore('interns', email);
+        if (exists) {
+            showAlert('An intern with this email is already registered.', 'warning');
+            return;
+        }
+
+        const intern = {
+            id: Date.now(),
+            firstName,
+            lastName,
+            email,
+            phone,
+            school,
+            department,
+            gender,
+            internId: generateInternID(),
+            dateAdded: new Date().toISOString()
+        };
+
+        await addIntern(intern);
+        await createAttendanceRecordForNewIntern(intern);
+
+        showAlert('Intern registered successfully.', 'success');
+        event.target.reset();
+        closeAddUserModal();
+        loadDashboardUsers();
+    } catch (error) {
+        showAlert('Error registering intern: ' + (error?.message || error), 'error');
+    }
+}
+
+async function handleSupervisorFormSubmit(event) {
+    event.preventDefault();
+    const firstName = document.getElementById('supervisorFirstName')?.value.trim();
+    const lastName = document.getElementById('supervisorLastName')?.value.trim();
+    const gender = document.getElementById('supervisorGender')?.value;
+    const email = document.getElementById('supervisorEmail')?.value.trim();
+    const phone = document.getElementById('supervisorPhone')?.value.trim();
+    const department = document.getElementById('supervisorDepartment')?.value;
+
+    if (!firstName || !lastName || !email || !phone || !department || !gender) {
+        showAlert('Please fill all supervisor registration fields.', 'warning');
+        return;
+    }
+    if (!NAME_REGEX.test(firstName) || !NAME_REGEX.test(lastName)) {
+        showAlert('Supervisor names can only contain letters and spaces.', 'error');
+        return;
+    }
+    if (!EMAIL_REGEX.test(email)) {
+        showAlert('Please enter a valid email address.', 'error');
+        return;
+    }
+    if (!isValidPhone(phone)) {
+        showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
+        return;
+    }
+
+    try {
+        const exists = await emailExistsInStore('supervisors', email);
+        if (exists) {
+            showAlert('A supervisor with this email is already registered.', 'warning');
+            return;
+        }
+
+        const supervisor = {
+            id: Date.now(),
+            firstName,
+            lastName,
+            gender,
+            email,
+            phone,
+            department,
+            status: 'Active',
+            dateAdded: new Date().toISOString()
+        };
+
+        await addSupervisor(supervisor);
+        showAlert('Supervisor registered successfully.', 'success');
+        event.target.reset();
+        closeSupervisorModal();
+        loadSupervisorsPage();
+    } catch (error) {
+        showAlert('Error registering supervisor: ' + (error?.message || error), 'error');
+    }
+}
+
+function handleFormSubmit(event, formType) {
     if (formType === 'intern') {
-        const firstName = document.getElementById('validationCustom01')?.value.trim();
-        const lastName = document.getElementById('validationCustom02')?.value.trim();
-        const email = document.getElementById('validationCustomUsername')?.value.trim();
-        const phone = document.getElementById('validationCustom03')?.value.trim();
-        const school = document.getElementById('validationCustom06')?.value.trim();
-        const department = document.getElementById('validationCustom04')?.value;
-        const gender = document.getElementById('validationCustom05')?.value;
-
-        if (!firstName) {
-            showAlert('First name is required!', 'warning');
-            return;
-        }
-        if (!lastName) {
-            showAlert('Last name is required!', 'warning');
-            return;
-        }
-        if (!email) {
-            showAlert('Email is required!', 'warning');
-            return;
-        }
-        if (!phone) {
-            showAlert('Phone number is required!', 'warning');
-            return;
-        }
-        if (!school) {
-            showAlert('School is required!', 'warning');
-            return;
-        }
-        if (!department || department === '') {
-            showAlert('Department is required!', 'warning');
-            return;
-        }
-        if (!gender || gender === '') {
-            showAlert('Gender is required!', 'warning');
-            return;
-        }
-
-        if (!NAME_REGEX.test(firstName)) {
-            showAlert('First name can only contain letters and spaces. No numbers or special characters allowed.', 'error');
-            return;
-        }
-        if (!NAME_REGEX.test(lastName)) {
-            showAlert('Last name can only contain letters and spaces. No numbers or special characters allowed.', 'error');
-            return;
-        }
-
-        if (!EMAIL_REGEX.test(email)) {
-            showAlert('Please enter a valid email address.', 'error');
-            return;
-        }
-
-        if (!isValidPhone(phone)) {
-            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
-            return;
-        }
-
-        emailExistsInStore('interns', email).then((exists) => {
-            if (exists) {
-                showAlert('An intern with this email is already registered.', 'warning');
-                return;
-            }
-
-            const intern = {
-                id: Date.now(),
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                phone: phone,
-                school: school,
-                department: department,
-                gender: gender,
-                internId: generateInternID(),
-                dateAdded: new Date().toISOString()
-            };
-
-            addIntern(intern).then((internData) => {
-                createAttendanceRecordForNewIntern(intern);
-                showAlert('Intern registered successfully.', 'success');
-                event.target.reset();
-                if (document.getElementById('addUserModal')) {
-                    closeAddUserModal();
-                }
-                loadDashboardUsers();
-            }).catch(error => {
-                showAlert('Error registering intern: ' + (error?.message || error), 'error');
-            });
-        }).catch(error => {
-            showAlert('Error checking existing records: ' + (error?.message || error), 'error');
-        });
+        handleInternFormSubmit(event);
     } else if (formType === 'supervisor') {
-        const firstName = document.getElementById('supervisorFirstName')?.value.trim();
-        const lastName = document.getElementById('supervisorLastName')?.value.trim();
-        const gender = document.getElementById('supervisorGender')?.value;
-        const email = document.getElementById('supervisorEmail')?.value.trim();
-        const phone = document.getElementById('supervisorPhone')?.value.trim();
-        const department = document.getElementById('supervisorDepartment')?.value;
-        
-
-        if (!firstName || !lastName || !email || !phone || !department || !gender) {
-            showAlert('Please fill all supervisor registration fields.', 'warning');
-            return;
-        }
-        if (gender === '') {
-            showAlert('Gender is required!', 'warning');
-            return;
-        }
-
-        if (!NAME_REGEX.test(firstName) || !NAME_REGEX.test(lastName)) {
-            showAlert('Supervisor names can only contain letters and spaces.', 'error');
-            return;
-        }
-
-        if (!EMAIL_REGEX.test(email)) {
-            showAlert('Please enter a valid email address.', 'error');
-            return;
-        }
-
-        if (!isValidPhone(phone)) {
-            showAlert('Please enter a valid phone number (must be exactly 9 digits).', 'error');
-            return;
-        }
-
-        emailExistsInStore('supervisors', email).then((exists) => {
-            if (exists) {
-                showAlert('A supervisor with this email is already registered.', 'warning');
-                return;
-            }
-
-            const supervisor = {
-                id: Date.now(),
-                firstName,
-                lastName,
-                gender,
-                email,
-                phone,
-                department,
-                status: 'Active',
-                dateAdded: new Date().toISOString()
-            };
-
-            addSupervisor(supervisor).then(() => {
-                showAlert('Supervisor registered successfully.', 'success');
-                event.target.reset();
-                if (document.getElementById('supervisorModal')) {
-                    closeSupervisorModal();
-                }
-                loadSupervisorsPage();
-            }).catch(error => {
-                showAlert('Error registering supervisor: ' + (error?.message || error), 'error');
-            });
-        }).catch(error => {
-            showAlert('Error checking existing records: ' + (error?.message || error), 'error');
-        });
+        handleSupervisorFormSubmit(event);
     }
 }
 
@@ -815,16 +777,16 @@ function generateInternID() {
     return `INT-${year}-${randomNum}`;
 }
 
-function createAttendanceRecordForNewIntern(intern) {
+async function createAttendanceRecordForNewIntern(intern) {
     const today = getLocalDateString();
-    
+
     const attendanceRecord = {
         id: Date.now(),
         internId: intern.id,
         internName: `${intern.firstName} ${intern.lastName}`,
         internId_code: intern.internId,
         email: intern.email,
-        department: intern.department,
+        department: intern.department, 
         date: today,
         checkInTime: null,
         checkOutTime: null,
@@ -832,12 +794,12 @@ function createAttendanceRecordForNewIntern(intern) {
         createdAt: new Date().toISOString()
     };
     
-    addAttendance(attendanceRecord).then(() => {
+    try {
+        await addAttendance(attendanceRecord);
         console.log('✅ Attendance record created for:', intern.firstName, intern.lastName);
-        showAlert(`Attendance record created for ${intern.firstName} ${intern.lastName}`, 'success', 3000);
-    }).catch(error => {
+    } catch (error) {
         console.error('❌ Error creating attendance record:', error);
-    });
+    }
 }
 
 /*
@@ -2352,11 +2314,13 @@ async function loadGroupTools() {
                 return `
                 <div class="group-card">
                     <div>
-                        <h4>${escapeHTML(group.name)}</h4>
-                        <p>${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
-                        <p class="text-muted small">Created on ${escapeHTML(formatDashboardDate(group.dateAdded))}</p>
-                        <p class="text-muted small">Last updated on ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</p>
-                        <p class="text-muted small">Description: ${escapeHTML(group.description || 'No description')}</p>
+                        <h4 class="group-card-title">${escapeHTML(group.name)}</h4>
+                        <p class="group-card-supervisor">${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
+                        <p class="group-card-description">${escapeHTML(group.description || 'No description.')}</p>
+                        <div class="group-card-meta">
+                            <span>Created: ${escapeHTML(formatDashboardDate(group.dateAdded))}</span>
+                            <span>Updated: ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</span>
+                        </div>
                     </div>
                     <span class="role-badge user">${groupInternIds.length} intern${groupInternIds.length === 1 ? '' : 's'}</span>
                     <div class="group-members">
@@ -2517,6 +2481,7 @@ async function handleCreateGroupSubmit(event) {
             await addGroup({
                 id: Date.now(),
                 name,
+                description,
                 supervisorId,
                 internIds,
                 dateAdded: new Date().toISOString()
@@ -3266,4 +3231,3 @@ function logoutAdmin() {
 
 const dropdownElementList = document.querySelectorAll('.dropdown-toggle')
 const dropdownList = [...dropdownElementList].map(dropdownToggleEl => new bootstrap.Dropdown(dropdownToggleEl))
-
