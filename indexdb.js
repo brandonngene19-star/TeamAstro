@@ -2294,6 +2294,7 @@ async function removeGroup(groupId) {
 
 async function loadGroupTools() {
     const supervisorSelect = document.getElementById('groupSupervisor');
+    const descriptionInput = document.getElementById('groupDescription');
     const internList = document.querySelector('[data-group-intern-list]');
     const groupsContainer = document.querySelector('[data-group-list]');
     if (!supervisorSelect || !internList || !groupsContainer) return;
@@ -2311,6 +2312,11 @@ async function loadGroupTools() {
                 `<option value="${supervisor.id}">${escapeHTML(supervisor.firstName)} ${escapeHTML(supervisor.lastName)}</option>`
             )).join('')}
         `;
+
+        if (descriptionInput) {
+            descriptionInput.value = '';
+        }
+
 
         internList.innerHTML = interns.length === 0
             ? '<p class="text-muted">No interns available yet.</p>'
@@ -2348,6 +2354,9 @@ async function loadGroupTools() {
                     <div>
                         <h4>${escapeHTML(group.name)}</h4>
                         <p>${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
+                        <p class="text-muted small">Created on ${escapeHTML(formatDashboardDate(group.dateAdded))}</p>
+                        <p class="text-muted small">Last updated on ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</p>
+                        <p class="text-muted small">Description: ${escapeHTML(group.description || 'No description')}</p>
                     </div>
                     <span class="role-badge user">${groupInternIds.length} intern${groupInternIds.length === 1 ? '' : 's'}</span>
                     <div class="group-members">
@@ -2385,10 +2394,12 @@ async function editGroup(groupId) {
         editingGroupId = group.id;
 
         const nameInput = document.getElementById('groupName');
+        const descriptionInput = document.getElementById('groupDescription');
         const supervisorSelect = document.getElementById('groupSupervisor');
         const internCheckboxes = document.querySelectorAll('[data-group-intern-list] input[type="checkbox"]');
 
         if (nameInput) nameInput.value = group.name || '';
+        if (descriptionInput) descriptionInput.value = group.description || '';
         if (supervisorSelect) supervisorSelect.value = group.supervisorId || '';
 
         const groupInternIds = (group.internIds || []).map(Number);
@@ -2427,6 +2438,7 @@ async function handleCreateGroupSubmit(event) {
     event.preventDefault();
 
     const name = document.getElementById('groupName')?.value.trim();
+    const description = document.getElementById('groupDescription')?.value.trim();  
     const supervisorId = Number(document.getElementById('groupSupervisor')?.value) || '';
     const internIds = Array.from(document.querySelectorAll('[data-group-intern-list] input:checked'))
         .map(input => Number(input.value));
@@ -2479,6 +2491,7 @@ async function handleCreateGroupSubmit(event) {
             await updateGroup({
                 ...existingGroup,
                 name,
+                description,
                 supervisorId,
                 internIds,
                 updatedAt: new Date().toISOString()
