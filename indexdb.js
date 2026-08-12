@@ -2314,6 +2314,7 @@ async function loadGroupTools() {
                 return `
                 <div class="group-card">
                     <div>
+<<<<<<< HEAD
                         <h4 class="group-card-title">${escapeHTML(group.name)}</h4>
                         <p class="group-card-supervisor">${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
                         <p class="group-card-description">${escapeHTML(group.description || 'No description.')}</p>
@@ -2321,6 +2322,14 @@ async function loadGroupTools() {
                             <span>Created: ${escapeHTML(formatDashboardDate(group.dateAdded))}</span>
                             <span>Updated: ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</span>
                         </div>
+=======
+                        <h4>${escapeHTML(group.name)}</h4>
+                        <p>${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
+                        <p class="text-muted small">Description: ${escapeHTML(group.description || 'No description')}</p>
+                        <p class="text-muted small">Created on ${escapeHTML(formatDashboardDate(group.dateAdded))}</p>
+                        <p class="text-muted small">Last updated on ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</p>
+                      
+>>>>>>> 7b91131 (added created date for group and last updated date)
                     </div>
                     <span class="role-badge user">${groupInternIds.length} intern${groupInternIds.length === 1 ? '' : 's'}</span>
                     <div class="group-members">
@@ -2415,6 +2424,16 @@ async function handleCreateGroupSubmit(event) {
         showAlert('Select at least one intern for the group.', 'warning');
         return;
     }
+    if (!supervisorId) {
+        showAlert('Select a supervisor for the group.', 'warning');
+        return;
+    }
+    
+    if(!description) {
+        showAlert('Group description is required.', 'warning');
+        return;
+    }
+
     if (internIds.length < 3 ) {
         showAlert('Select at least three interns for the group.', 'warning');
         return;
