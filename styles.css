@@ -1784,6 +1784,25 @@ header {
     cursor: help;
 }
 
+.permission-info-icon {
+    margin-left: 4px;
+    cursor: help;
+}
+
+.permission-status {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.permission-status small {
+    color: var(--text-muted);
+    font-weight: 600;
+    line-height: 1.2;
+    max-width: 150px;
+}
+
 /* button sizing & variants */
 .btn-primary {
     background-color: var(--primary-color);
@@ -2056,3 +2075,21 @@ img, video, table {
 .week-stat-card.excused .week-stat-value {
     color: #7C3AED;
 }
+.groupSearch{
+    display: flex;
+    flex-direction: row;
+  
+}
+.groupSearch input{
+    margin-left: 20px;
+    width: 50%;
+    height: 33.5px;
+
+}
+.filter-intern-search input{
+    margin-right: 20px;
+    height: 33.5px;
+
+}
+
+

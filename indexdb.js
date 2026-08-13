@@ -105,11 +105,12 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
             const maxlengthAttribute = field.maxlength ? `maxlength="${field.maxlength}"` : '';
             const patternAttribute = field.pattern ? `pattern="${escapeHTML(field.pattern)}"` : '';
             const inputmodeAttribute = field.inputmode ? `inputmode="${field.inputmode}"` : '';
+            const inputType = field.type || 'text';
 
             return `
                 <label class="custom-modal-field">
                     <span>${escapeHTML(field.label)}</span>
-                    <input name="${escapeHTML(field.name)}" type="text" value="${escapeHTML(field.value || '')}" placeholder="${escapeHTML(field.placeholder || '')}" ${maxlengthAttribute} ${patternAttribute} ${inputmodeAttribute} ${lockedAttribute}>
+                    <input name="${escapeHTML(field.name)}" type="${escapeHTML(inputType)}" value="${escapeHTML(field.value || '')}" placeholder="${escapeHTML(field.placeholder || '')}" ${maxlengthAttribute} ${patternAttribute} ${inputmodeAttribute} ${lockedAttribute}>
                     ${field.helpText ? `<small>${escapeHTML(field.helpText)}</small>` : ''}
                 </label>
             `;
@@ -612,6 +613,11 @@ function exportToCSV(storeName) {
             };
             const excluded = EXCLUDED_FIELDS[storeName] || new Set();
             const keys = Object.keys(data[0]).filter(key => !ID_FIELDS.has(key) && !excluded.has(key));
+            if (storeName === 'attendance') {
+                ['permissionReason', 'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionRecordedAt'].forEach(key => {
+                    if (!keys.includes(key)) keys.push(key);
+                });
+            }
             let csv = ['No.', ...keys].map(escapeCSVValue).join(',') + '\n';
 
             // Fields that are only ever filled in for a subset of rows (e.g. an
@@ -620,7 +626,7 @@ function exportToCSV(storeName) {
             // to misread as missing data versus "not applicable". Fill those with
             // a literal "-" instead of leaving them empty.
             const DASH_IF_EMPTY_FIELDS = {
-                attendance: new Set(['originalStatus', 'excuseReason', 'excusedAt'])
+                attendance: new Set(['originalStatus', 'excuseReason', 'excusedAt', 'permissionReason', 'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionRecordedAt'])
             };
             const dashIfEmpty = DASH_IF_EMPTY_FIELDS[storeName] || new Set();
 
@@ -1005,7 +1011,19 @@ async function loadAttendanceTable() {
                 ? `<i class="fas fa-circle-info excuse-reason-icon" title="${escapeHTML(attendance.excuseReason)}"></i>`
                 : '';
 
-            const statusBadge = `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}${excuseReasonIcon}</span>`;
+            const permissionStatusHTML = isPermissionActive(attendance)
+                ? `
+                    <div class="permission-status">
+                        <span class="badge bg-info status-badge">
+                            On Permission
+                            <i class="fas fa-clock permission-info-icon" title="${escapeHTML(`${attendance.permissionDate || today}, ${formatPermissionTimeRange(attendance)}`)}"></i>
+                        </span>
+                        <small>${escapeHTML(attendance.permissionReason)}</small>
+                    </div>
+                `
+                : '';
+
+            const statusBadge = permissionStatusHTML || `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}${excuseReasonIcon}</span>`;
 
             const hasCheckedIn = Boolean(attendance.checkInTime);
             const hasCheckedOut = Boolean(attendance.checkOutTime);
@@ -1050,6 +1068,7 @@ async function loadAttendanceTable() {
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-light" type="button" title="Record temporary permission" onclick="recordTemporaryPermission(${intern.id})"><i class="fas fa-clock"></i></button>
                             ${excuseActionHTML}
                         </div>
                     </td>
@@ -1089,6 +1108,41 @@ function applyAttendanceFilters() {
     loadAttendanceTable();
 }
 
+function applyGroupInternFilters() {
+    loadGroupTools();
+}
+
+function applyInternsFilter() {
+    loadDashboardUsers();
+}
+
+function applySupervisorsFilter() {
+    loadSupervisorsPage();
+}
+
+function formatPermissionTimeRange(record) {
+    const from = record.permissionFromTime || '-';
+    const to = record.permissionToTime || '-';
+    return `${from} to ${to}`;
+}
+
+function hasPermissionRecord(record) {
+    return Boolean(record && record.permissionReason);
+}
+
+function isPermissionActive(record, now = new Date()) {
+    if (!hasPermissionRecord(record) || !record.permissionDate || !record.permissionToTime) {
+        return false;
+    }
+
+    const permissionEndsAt = new Date(`${record.permissionDate}T${record.permissionToTime}`);
+    if (Number.isNaN(permissionEndsAt.getTime())) {
+        return false;
+    }
+
+    return now <= permissionEndsAt;
+}
+
 async function viewAttendanceDetails(internId) {
     try {
         const intern = await getInternById(internId);
@@ -1124,6 +1178,8 @@ async function viewAttendanceDetails(internId) {
                 checkOut: record?.checkOutTime || null,
                 status: record?.status && record.status !== '-' ? record.status : null,
                 excuseReason: record?.excuseReason || null,
+                permissionReason: record?.permissionReason || null,
+                permissionTime: record?.permissionReason ? formatPermissionTimeRange(record) : null,
                 isToday: dateStr === today,
                 isFuture: dateStr > today
             };
@@ -1175,7 +1231,10 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
             pillLabel = 'Absent';
         }
 
-        const pillTitle = day.excuseReason ? ` title="${escapeHTML(day.excuseReason)}"` : '';
+        const noteParts = [];
+        if (day.excuseReason) noteParts.push(`Excuse: ${day.excuseReason}`);
+        if (day.permissionReason) noteParts.push(`Permission: ${day.permissionReason}${day.permissionTime ? ` (${day.permissionTime})` : ''}`);
+        const pillTitle = noteParts.length > 0 ? ` title="${escapeHTML(noteParts.join(' | '))}"` : '';
 
         return `
             <tr>
@@ -1499,12 +1558,25 @@ function getUserInitials(firstName, lastName) {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U';
 }
 
+function recordMatchesNameOrDepartment(record, searchTerm) {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!normalizedSearch) return true;
+
+    const fullName = `${record.firstName || ''} ${record.lastName || ''}`.toLowerCase();
+    const department = (record.department || '').toLowerCase();
+
+    return fullName.includes(normalizedSearch) || department.includes(normalizedSearch);
+}
+
 async function loadDashboardUsers() {
     const tableContainer = document.querySelector('[data-user-table]');
     if (!tableContainer) return;
 
     try {
         const allInterns = (await getAllInterns()).sort((a, b) => b.id - a.id);
+        const searchInput = document.getElementById('internSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        const interns = allInterns.filter(intern => recordMatchesNameOrDepartment(intern, searchTerm));
         const today = getLocalDateString();
         const departmentCount = new Set(allInterns.map(intern => intern.department).filter(Boolean)).size;
         const addedTodayCount = allInterns.filter(intern => intern.dateAdded?.startsWith(today)).length;
@@ -1528,7 +1600,18 @@ async function loadDashboardUsers() {
             return;
         }
 
-        const rowsHTML = allInterns.map(intern => `
+        if (interns.length === 0) {
+            tableContainer.innerHTML = `
+                <div class="dashboard-empty-state">
+                    <i class="fas fa-search"></i>
+                    <h3>No matching interns</h3>
+                    <p>Try a different name or department.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const rowsHTML = interns.map(intern => `
             <tr>
                 <td>
                     <div class="dashboard-user-cell">
@@ -1850,6 +1933,9 @@ async function loadSupervisorsPage() {
             getAllSupervisors(),
             getAllInterns()
         ]);
+        const searchInput = document.getElementById('supervisorSearchInput');
+        const searchTerm = searchInput ? searchInput.value : '';
+        const filteredSupervisors = supervisors.filter(supervisor => recordMatchesNameOrDepartment(supervisor, searchTerm));
         const assignedInternCounts = interns.reduce((counts, intern) => {
             if (intern.supervisorId) {
                 counts[intern.supervisorId] = (counts[intern.supervisorId] || 0) + 1;
@@ -1879,7 +1965,18 @@ async function loadSupervisorsPage() {
             return;
         }
 
-        const rowsHTML = supervisors.map(supervisor => {
+        if (filteredSupervisors.length === 0) {
+            tableContainer.innerHTML = `
+                <div class="dashboard-empty-state">
+                    <i class="fas fa-search"></i>
+                    <h3>No matching supervisors</h3>
+                    <p>Try a different name or department.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const rowsHTML = filteredSupervisors.map(supervisor => {
             const status = supervisor.status || 'Active';
             const isActive = status === 'Active';
 
@@ -2262,7 +2359,7 @@ async function loadGroupTools() {
     if (!supervisorSelect || !internList || !groupsContainer) return;
 
     try {
-        const [supervisors, interns, groups] = await Promise.all([
+        const [supervisors, allInterns, groups] = await Promise.all([
             getAllSupervisors(),
             getAllInterns(),
             getAllGroups()
@@ -2279,6 +2376,15 @@ async function loadGroupTools() {
             descriptionInput.value = '';
         }
 
+        const searchInputEl = document.getElementById('groupInternSearchInput');
+        const searchTerm = searchInputEl ? searchInputEl.value.trim().toLowerCase() : '';
+
+        const interns = allInterns.filter(intern => {
+            if (!searchTerm) return true;
+            const fullName = `${intern.firstName} ${intern.lastName}`.toLowerCase();
+            const department = (intern.department || '').toLowerCase();
+            return fullName.includes(searchTerm) || department.includes(searchTerm);
+        });
 
         internList.innerHTML = interns.length === 0
             ? '<p class="text-muted">No interns available yet.</p>'
@@ -2296,7 +2402,7 @@ async function loadGroupTools() {
             map[supervisor.id] = `${supervisor.firstName} ${supervisor.lastName}`;
             return map;
         }, {});
-        const internMap = interns.reduce((map, intern) => {
+        const internMap = allInterns.reduce((map, intern) => {
             map[intern.id] = `${intern.firstName} ${intern.lastName}`;
             return map;
         }, {});
@@ -2314,22 +2420,13 @@ async function loadGroupTools() {
                 return `
                 <div class="group-card">
                     <div>
-<<<<<<< HEAD
                         <h4 class="group-card-title">${escapeHTML(group.name)}</h4>
                         <p class="group-card-supervisor">${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
                         <p class="group-card-description">${escapeHTML(group.description || 'No description.')}</p>
                         <div class="group-card-meta">
                             <span>Created: ${escapeHTML(formatDashboardDate(group.dateAdded))}</span>
                             <span>Updated: ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</span>
-                        </div>
-=======
-                        <h4>${escapeHTML(group.name)}</h4>
-                        <p>${escapeHTML(supervisorMap[group.supervisorId] || 'No supervisor assigned')}</p>
-                        <p class="text-muted small">Description: ${escapeHTML(group.description || 'No description')}</p>
-                        <p class="text-muted small">Created on ${escapeHTML(formatDashboardDate(group.dateAdded))}</p>
-                        <p class="text-muted small">Last updated on ${escapeHTML(formatDashboardDate(group.updatedAt || group.dateAdded))}</p>
-                      
->>>>>>> 7b91131 (added created date for group and last updated date)
+                        </div>            
                     </div>
                     <span class="role-badge user">${groupInternIds.length} intern${groupInternIds.length === 1 ? '' : 's'}</span>
                     <div class="group-members">
@@ -2973,6 +3070,102 @@ async function checkOutAttendance(internId) {
     }
 }
 
+async function recordTemporaryPermission(internId) {
+    try {
+        const intern = await getInternById(internId);
+        if (!intern) {
+            showAlert('Intern record was not found.', 'warning');
+            return;
+        }
+
+        const today = getLocalDateString();
+        const existingRecords = await getAttendanceByInternId(internId);
+        const existingRecord = existingRecords.find(record => record.date === today);
+
+        const values = await showCustomModal({
+            title: 'Temporary Permission',
+            message: `${intern.firstName} ${intern.lastName}`,
+            confirmText: 'Save Permission',
+            fields: [
+                {
+                    name: 'reason',
+                    label: 'Reason',
+                    value: existingRecord?.permissionReason || '',
+                    placeholder: 'e.g. Bank errand, medical appointment'
+                },
+                {
+                    name: 'date',
+                    label: 'Permission date',
+                    type: 'date',
+                    value: existingRecord?.permissionDate || today
+                },
+                {
+                    name: 'fromTime',
+                    label: 'Departure time',
+                    type: 'time',
+                    value: existingRecord?.permissionFromTime || ''
+                },
+                {
+                    name: 'toTime',
+                    label: 'Expected return time',
+                    type: 'time',
+                    value: existingRecord?.permissionToTime || ''
+                }
+            ]
+        });
+
+        if (!values) return;
+
+        const reason = (values.reason || '').trim();
+        const permissionDate = values.date || today;
+        const fromTime = values.fromTime || '';
+        const toTime = values.toTime || '';
+
+        if (!reason || !permissionDate || !fromTime || !toTime) {
+            showAlert('Please provide the permission reason, date, departure time, and return time.', 'warning');
+            return;
+        }
+
+        if (fromTime >= toTime) {
+            showAlert('Expected return time must be after the departure time.', 'warning');
+            return;
+        }
+
+        const recordToSave = {
+            ...(existingRecord || {
+                id: Date.now(),
+                internId,
+                internName: `${intern.firstName} ${intern.lastName}`,
+                internId_code: intern.internId || '',
+                email: intern.email || '',
+                department: intern.department || '',
+                date: today,
+                checkInTime: null,
+                checkOutTime: null,
+                status: '-',
+                createdAt: new Date().toISOString()
+            }),
+            permissionReason: reason,
+            permissionDate,
+            permissionFromTime: fromTime,
+            permissionToTime: toTime,
+            permissionRecordedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (existingRecord) {
+            await dbPut('attendance', recordToSave);
+        } else {
+            await addAttendance(recordToSave);
+        }
+
+        showAlert('Temporary permission recorded successfully.', 'success');
+        await loadAttendanceTable();
+    } catch (error) {
+        showAlert('Error recording permission: ' + error, 'error');
+    }
+}
+
 /*
   EXCUSED ATTENDANCE
   Auto-computed status (Present/Late/Absent) has no way to account for a
@@ -3109,17 +3302,54 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+
+            setInterval(() => {
+                loadAttendanceTable();
+            }, 30000);
         }
 
         const dashboardTable = document.querySelector('[data-user-table]');
         if (dashboardTable) {
             loadDashboardUsers();
+
+            const internSearchInput = document.getElementById('internSearchInput');
+            if (internSearchInput) {
+                internSearchInput.addEventListener('input', applyInternsFilter);
+                internSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applyInternsFilter();
+                    }
+                });
+            }
         }
 
         const supervisorTable = document.querySelector('[data-supervisor-table]');
         if (supervisorTable) {
             loadSupervisorsPage();
             loadGroupTools();
+
+            const supervisorSearchInput = document.getElementById('supervisorSearchInput');
+            if (supervisorSearchInput) {
+                supervisorSearchInput.addEventListener('input', applySupervisorsFilter);
+                supervisorSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applySupervisorsFilter();
+                    }
+                });
+            }
+
+            const groupInternSearchInput = document.getElementById('groupInternSearchInput');
+            if (groupInternSearchInput) {
+                groupInternSearchInput.addEventListener('input', applyGroupInternFilters);
+                groupInternSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applyGroupInternFilters();
+                    }
+                });
+            }
         }
 
         const performanceTable = document.querySelector('[data-performance-table]');

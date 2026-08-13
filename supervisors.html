@@ -80,6 +80,10 @@
                     <p>Register and manage supervisor accounts</p>
                 </div>
                 <div class="row-1-right">
+                    <div class="filter-supervisor-container">
+                        <input class="filter-search" type="text" id="supervisorSearchInput" placeholder="Search by name or department...">
+                        <button class="filter-btn" type="button" onclick="applySupervisorsFilter()">Filter</button>
+                    </div>
                     <div class="btns">
                         <button class="btn btn-export" type="button" onclick="exportToCSV('supervisors')">
                             <i class="fas fa-download"></i>
@@ -157,7 +161,10 @@
                         <div class="group-intern-picker">
                             <div class="group-section-title">
                                 <h3>Interns</h3>
-                                <p>Select interns to place in this group.</p>
+                                <span class="groupSearch"><p>Select interns to place in this group.</p><input class="filter-search" type="text" id="groupInternSearchInput" placeholder="Search by name or department...">
+                                    <button class="filter-btn" type="button" onclick="applyGroupInternFilters()">Filter</button>
+                                </span>
+                                
                             </div>
                             <div class="group-intern-list" data-group-intern-list>
                                 <p class="text-muted">Loading interns...</p>

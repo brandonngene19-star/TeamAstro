@@ -86,6 +86,10 @@
                     <p>Register and manage intern records</p>
                 </div>
                 <div class="row-1-right">
+                    <div class="filter-intern-container">
+                        <input class="filter-search" type="text" id="internSearchInput" placeholder="Search by name or department...">
+                        <button class="filter-btn" type="button" onclick="applyInternsFilter()">Filter</button>
+                    </div>
                     <div class="btns">
                         <button class="btn btn-export" type="button" onclick="exportToCSV('interns')">
                             <i class="fas fa-download"></i>
