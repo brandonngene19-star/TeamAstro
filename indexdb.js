@@ -6,6 +6,12 @@ const DB_VERSION = 7;
 const NAME_REGEX = /^[a-zA-Z\s]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Interns are limited to this many separate permissions (temporary outings)
+// per day. Rechecking in from an already-active permission, or editing the
+// details of that still-active permission, never counts against the limit —
+// only actually starting a NEW permission does.
+const DAILY_PERMISSION_LIMIT = 2;
+
 function isValidPhone(phone) {
     return /^\d{9}$/.test(String(phone).replace(/[\s\-()]/g, ''));
 }
@@ -76,7 +82,7 @@ function escapeHTML(value) {
   a popup box in HTML and wraps it in a JavaScript Promise. This lets us use "await" 
   when calling this modal to wait until the user clicks Save or Cancel before continuing execution!
 */
-function showCustomModal({ title, message, fields = [], confirmText = 'Save', cancelText = 'Cancel', danger = false }) {
+function showCustomModal({ title, message, fields = [], confirmText = 'Save', cancelText = 'Cancel', danger = false, secondaryText = '', secondaryValue = null }) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'custom-modal-overlay';
@@ -130,6 +136,7 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
                 ${fieldsHTML ? `<form class="custom-modal-form">${fieldsHTML}</form>` : ''}
                 <div class="custom-modal-actions">
                     <button type="button" class="custom-modal-cancel">${escapeHTML(cancelText)}</button>
+                    ${secondaryText ? `<button type="button" class="custom-modal-secondary">${escapeHTML(secondaryText)}</button>` : ''}
                     <button type="button" class="custom-modal-confirm ${danger ? 'danger' : ''}">${escapeHTML(confirmText)}</button>
                 </div>
             </div>
@@ -146,6 +153,10 @@ function showCustomModal({ title, message, fields = [], confirmText = 'Save', ca
         };
 
         overlay.querySelector('.custom-modal-cancel').addEventListener('click', () => close(null));
+        const secondaryButton = overlay.querySelector('.custom-modal-secondary');
+        if (secondaryButton) {
+            secondaryButton.addEventListener('click', () => close(secondaryValue ?? { action: 'secondary' }));
+        }
         overlay.querySelector('.custom-modal-confirm').addEventListener('click', () => {
             const values = {};
             fields.forEach(field => {
@@ -606,18 +617,56 @@ function exportToCSV(storeName) {
                 return;
             }
 
-            const ID_FIELDS = new Set(['id', 'internId', 'internId_code', 'supervisorId']);
-           
+            const ID_FIELDS = new Set(['id', 'internId', 'internId_code', 'supervisorId', 'permissionSupervisorId']);
+
             const EXCLUDED_FIELDS = {
-                attendance: new Set(['remarks'])
+                // permissionHistory is an array of objects (one per permission
+                // taken that day) — it can't be flattened into a single CSV
+                // cell, so it's left out here and represented instead by the
+                // permissionCount column below.
+                attendance: new Set(['remarks', 'permissionHistory'])
             };
             const excluded = EXCLUDED_FIELDS[storeName] || new Set();
-            const keys = Object.keys(data[0]).filter(key => !ID_FIELDS.has(key) && !excluded.has(key));
-            if (storeName === 'attendance') {
-                ['permissionReason', 'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionRecordedAt'].forEach(key => {
-                    if (!keys.includes(key)) keys.push(key);
-                });
+
+            // Attendance records are NOT uniform: fields like permissionReason,
+            // excuseReason, permissionRecordedAt, etc. only get added to a given
+            // record the moment that event happens (a permission granted, an
+            // excuse logged...). Deriving the export's column list from just
+            // Object.keys(data[0]) — the old approach — meant that whichever
+            // record happened to land first silently decided what columns the
+            // WHOLE file got: any field missing from that one record either
+            // vanished from the export entirely (for excuse-related fields) or
+            // got shoved to the very end out of order (for permission fields).
+            // Instead, for attendance we use a fixed, logical column order and
+            // take the UNION of keys across every exported record, so a field
+            // recorded on any row always gets its own stable column and no
+            // recorded data is ever silently dropped.
+            const PREFERRED_ORDER = {
+                attendance: [
+                    'internName', 'email', 'department', 'date',
+                    'checkInTime', 'checkOutTime', 'status',
+                    'originalStatus', 'excuseReason', 'excusedAt',
+                    'permissionCount',
+                    'permissionReason', 'permissionSupervisorName', 'permissionDurationHours',
+                    'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionEndsAt',
+                    'permissionActualReturnTime', 'permissionActualReturnedAt', 'permissionRecordedAt',
+                    'createdAt', 'updatedAt', 'statusLockedAt'
+                ]
+            };
+
+            let keys;
+            if (PREFERRED_ORDER[storeName]) {
+                const unionKeys = new Set();
+                data.forEach(item => Object.keys(item).forEach(key => {
+                    if (!ID_FIELDS.has(key) && !excluded.has(key)) unionKeys.add(key);
+                }));
+                const preferred = PREFERRED_ORDER[storeName];
+                const extras = [...unionKeys].filter(key => !preferred.includes(key)).sort();
+                keys = [...preferred.filter(key => unionKeys.has(key)), ...extras];
+            } else {
+                keys = Object.keys(data[0]).filter(key => !ID_FIELDS.has(key) && !excluded.has(key));
             }
+
             let csv = ['No.', ...keys].map(escapeCSVValue).join(',') + '\n';
 
             // Fields that are only ever filled in for a subset of rows (e.g. an
@@ -626,15 +675,18 @@ function exportToCSV(storeName) {
             // to misread as missing data versus "not applicable". Fill those with
             // a literal "-" instead of leaving them empty.
             const DASH_IF_EMPTY_FIELDS = {
-                attendance: new Set(['originalStatus', 'excuseReason', 'excusedAt', 'permissionReason', 'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionRecordedAt'])
+                attendance: new Set(['originalStatus', 'excuseReason', 'excusedAt', 'permissionReason', 'permissionSupervisorName', 'permissionDurationHours', 'permissionDate', 'permissionFromTime', 'permissionToTime', 'permissionEndsAt', 'permissionActualReturnTime', 'permissionActualReturnedAt', 'permissionRecordedAt'])
             };
             const dashIfEmpty = DASH_IF_EMPTY_FIELDS[storeName] || new Set();
 
             data.forEach((item, index) => {
                 const values = [index + 1, ...keys.map(key => {
-                    const rawValue = (dashIfEmpty.has(key) && (item[key] === null || item[key] === undefined || item[key] === ''))
-                        ? '-'
-                        : item[key];
+                    let rawValue = item[key];
+                    if (key === 'permissionCount' && (rawValue === null || rawValue === undefined)) {
+                        rawValue = (item.permissionHistory || []).length || 0;
+                    } else if (dashIfEmpty.has(key) && (rawValue === null || rawValue === undefined || rawValue === '')) {
+                        rawValue = '-';
+                    }
                     return key === 'phone' ? escapeCSVPhoneValue(rawValue) : escapeCSVValue(rawValue);
                 })];
                 csv += values.join(',') + '\n';
@@ -895,15 +947,28 @@ function getWeekRangeStrings(referenceDate = new Date()) {
     return { start: toISODate(monday), end: toISODate(sunday) };
 }
 
-// Tallies how many times an intern was Present / Late / Absent within a week range.
-function summarizeWeeklyAttendance(records, weekRange) {
+/*
+  Tallies how many times an intern was Present / Late / Absent / Excused
+  across the week, from the SAME weekDays array the "View details" modal
+  renders (see viewAttendanceDetails / showAttendanceWeekModal). This has to
+  match the modal's own pill logic exactly: a past weekday with no stored
+  attendance record still shows an "Absent" pill (nobody checked the intern
+  in), even though there's no record with status === 'Absent' to count. Using
+  weekDays as the single source of truth for both the pills and this summary
+  keeps the stat cards and the CSV export from disagreeing with what the
+  intern's row actually shows.
+*/
+function computeWeeklyAttendanceSummary(weekDays) {
     const summary = { present: 0, late: 0, absent: 0, excused: 0 };
-    records.forEach(record => {
-        if (record.date < weekRange.start || record.date > weekRange.end) return;
-        if (record.status === 'Present') summary.present++;
-        else if (record.status === 'Late') summary.late++;
-        else if (record.status === 'Absent') summary.absent++;
-        else if (record.status === 'Excused') summary.excused++;
+    weekDays.forEach(day => {
+        if (day.status === 'Present') summary.present++;
+        else if (day.status === 'Late') summary.late++;
+        else if (day.status === 'Excused') summary.excused++;
+        else if (day.status === 'Absent') summary.absent++;
+        // No stored status: a future day is simply blank, today is still
+        // "Pending" until checked in, but any other past day with nothing
+        // on record is exactly the implicit "Absent" the modal displays.
+        else if (!day.isFuture && !day.isToday) summary.absent++;
     });
     return summary;
 }
@@ -1011,19 +1076,27 @@ async function loadAttendanceTable() {
                 ? `<i class="fas fa-circle-info excuse-reason-icon" title="${escapeHTML(attendance.excuseReason)}"></i>`
                 : '';
 
-            const permissionStatusHTML = isPermissionActive(attendance)
+            const permissionHistoryToday = attendance.permissionHistory || [];
+            const permissionActive = isPermissionActive(attendance);
+            const permissionLimitReached = !permissionActive && permissionHistoryToday.length >= DAILY_PERMISSION_LIMIT;
+
+            const permissionStatusHTML = permissionActive
                 ? `
                     <div class="permission-status">
                         <span class="badge bg-info status-badge">
                             On Permission
-                            <i class="fas fa-clock permission-info-icon" title="${escapeHTML(`${attendance.permissionDate || today}, ${formatPermissionTimeRange(attendance)}`)}"></i>
+                            <i class="fas fa-clock permission-info-icon" title="${escapeHTML(`${attendance.permissionDate || today}, ${formatPermissionTimeRange(attendance)}${attendance.permissionSupervisorName ? `, by ${attendance.permissionSupervisorName}` : ''} (${permissionHistoryToday.length}/${DAILY_PERMISSION_LIMIT} used today)`)}"></i>
                         </span>
                         <small>${escapeHTML(attendance.permissionReason)}</small>
                     </div>
                 `
                 : '';
 
-            const statusBadge = permissionStatusHTML || `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}${excuseReasonIcon}</span>`;
+            const permissionLimitIcon = permissionLimitReached
+                ? `<i class="fas fa-ban permission-limit-icon" title="Daily permission limit reached (${DAILY_PERMISSION_LIMIT}/${DAILY_PERMISSION_LIMIT} used today)"></i>`
+                : '';
+
+            const statusBadge = permissionStatusHTML || `<span class="badge bg-${statusColor} status-badge">${attendance.status}${statusLockIcon}${excuseReasonIcon}${permissionLimitIcon}</span>`;
 
             const hasCheckedIn = Boolean(attendance.checkInTime);
             const hasCheckedOut = Boolean(attendance.checkOutTime);
@@ -1068,7 +1141,7 @@ async function loadAttendanceTable() {
                     <td>
                         <div class="d-flex gap-1">
                             <button class="btn btn-light" type="button" title="View details" onclick="viewAttendanceDetails(${intern.id})"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-light" type="button" title="Record temporary permission" onclick="recordTemporaryPermission(${intern.id})"><i class="fas fa-clock"></i></button>
+                            <button class="btn btn-light" type="button" title="${permissionLimitReached ? `Daily permission limit reached (${DAILY_PERMISSION_LIMIT}/${DAILY_PERMISSION_LIMIT})` : 'Record temporary permission'}" ${permissionLimitReached ? 'disabled' : ''} onclick="recordTemporaryPermission(${intern.id})"><i class="fas fa-clock"></i></button>
                             ${excuseActionHTML}
                         </div>
                     </td>
@@ -1126,16 +1199,31 @@ function formatPermissionTimeRange(record) {
     return `${from} to ${to}`;
 }
 
+function formatTimeInputValue(date = new Date()) {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function addHoursToDate(date, hours) {
+    return new Date(date.getTime() + (hours * 60 * 60 * 1000));
+}
+
 function hasPermissionRecord(record) {
     return Boolean(record && record.permissionReason);
 }
 
 function isPermissionActive(record, now = new Date()) {
-    if (!hasPermissionRecord(record) || !record.permissionDate || !record.permissionToTime) {
+    if (!hasPermissionRecord(record)) {
+        return false;
+    }
+    if (record.permissionActualReturnedAt) {
         return false;
     }
 
-    const permissionEndsAt = new Date(`${record.permissionDate}T${record.permissionToTime}`);
+    const permissionEndsAt = record.permissionEndsAt
+        ? new Date(record.permissionEndsAt)
+        : new Date(`${record.permissionDate}T${record.permissionToTime}`);
     if (Number.isNaN(permissionEndsAt.getTime())) {
         return false;
     }
@@ -1153,7 +1241,6 @@ async function viewAttendanceDetails(internId) {
 
         const records = await getAttendanceByInternId(internId);
         const weekRange = getWeekRangeStrings();
-        const weekly = summarizeWeeklyAttendance(records, weekRange);
 
         const recordsByDate = {};
         records.forEach(record => { recordsByDate[record.date] = record; });
@@ -1179,11 +1266,19 @@ async function viewAttendanceDetails(internId) {
                 status: record?.status && record.status !== '-' ? record.status : null,
                 excuseReason: record?.excuseReason || null,
                 permissionReason: record?.permissionReason || null,
+                permissionSupervisorName: record?.permissionSupervisorName || null,
                 permissionTime: record?.permissionReason ? formatPermissionTimeRange(record) : null,
+                permissionActualReturnTime: record?.permissionActualReturnTime || null,
+                // Full list of every permission taken that day (not just the
+                // latest one) so the details view can show who took permission
+                // and when, even when the daily limit of more than one was used.
+                permissionHistory: record?.permissionHistory || [],
                 isToday: dateStr === today,
                 isFuture: dateStr > today
             };
         });
+
+        const weekly = computeWeeklyAttendanceSummary(weekDays);
 
         showAttendanceWeekModal({ intern, weekDays, weekly });
     } catch (error) {
@@ -1233,8 +1328,28 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
 
         const noteParts = [];
         if (day.excuseReason) noteParts.push(`Excuse: ${day.excuseReason}`);
-        if (day.permissionReason) noteParts.push(`Permission: ${day.permissionReason}${day.permissionTime ? ` (${day.permissionTime})` : ''}`);
+
+        if (day.permissionHistory && day.permissionHistory.length > 0) {
+            // Show every permission taken that day, not just the latest one —
+            // this is what surfaces "who took permission" when a day used more
+            // than one of the allowed daily permissions.
+            day.permissionHistory.forEach((entry, index) => {
+                const timeRange = `${entry.fromTime || '-'} to ${entry.toTime || '-'}`;
+                const returned = entry.actualReturnTime ? `, returned ${entry.actualReturnTime}` : ', not yet returned';
+                noteParts.push(`Permission ${index + 1}: ${entry.reason} (${timeRange}) approved by ${entry.supervisorName || '-'}${returned}`);
+            });
+        } else if (day.permissionReason) {
+            // Fallback for records saved before per-day permission history was
+            // tracked — still show whatever single permission is on record.
+            noteParts.push(`Permission: ${day.permissionReason}${day.permissionTime ? ` (${day.permissionTime})` : ''}`);
+            if (day.permissionSupervisorName) noteParts.push(`Supervisor: ${day.permissionSupervisorName}`);
+            if (day.permissionActualReturnTime) noteParts.push(`Returned: ${day.permissionActualReturnTime}`);
+        }
+
         const pillTitle = noteParts.length > 0 ? ` title="${escapeHTML(noteParts.join(' | '))}"` : '';
+        const permissionCountBadge = day.permissionHistory && day.permissionHistory.length > 0
+            ? `<i class="fas fa-clock week-permission-count-icon" title="${escapeHTML(`${day.permissionHistory.length} permission${day.permissionHistory.length === 1 ? '' : 's'} taken`)}">${day.permissionHistory.length}</i>`
+            : '';
 
         return `
             <tr>
@@ -1244,10 +1359,31 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
                 </td>
                 <td>${escapeHTML(day.checkIn || '-')}</td>
                 <td>${escapeHTML(day.checkOut || '-')}</td>
-                <td class="week-status-cell"><span class="week-status-pill ${pillClass}"${pillTitle}>${escapeHTML(pillLabel)}</span></td>
+                <td class="week-status-cell"><span class="week-status-pill ${pillClass}"${pillTitle}>${escapeHTML(pillLabel)}</span>${permissionCountBadge}</td>
             </tr>
         `;
     }).join('');
+
+    // A dedicated, always-visible list of every permission taken this week —
+    // not just hover-tooltip text — so it's clear at a glance who took
+    // permission on which day, even when a day used more than one.
+    const permissionEntriesHTML = weekDays
+        .flatMap(day => (day.permissionHistory || []).map((entry, index) => ({ day, entry, index })))
+        .map(({ day, entry, index }) => `
+            <div class="week-permission-entry">
+                <div class="week-permission-entry-top">
+                    <span class="week-permission-date">${escapeHTML(formatShortDate(day.dateStr))} · #${index + 1}</span>
+                    <span class="week-permission-time">${escapeHTML(entry.fromTime || '-')}–${escapeHTML(entry.toTime || '-')}</span>
+                </div>
+                <div class="week-permission-reason">${escapeHTML(entry.reason || '-')}</div>
+                <div class="week-permission-meta">
+                    <span>Approved by <strong>${escapeHTML(entry.supervisorName || '-')}</strong></span>
+                    <span class="${entry.actualReturnTime ? 'week-permission-returned' : 'week-permission-pending'}">
+                        ${entry.actualReturnTime ? `Returned ${escapeHTML(entry.actualReturnTime)}` : 'Not yet returned'}
+                    </span>
+                </div>
+            </div>
+        `).join('');
 
     overlay.innerHTML = `
         <div class="custom-modal details-modal">
@@ -1273,6 +1409,12 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
                     </tbody>
                 </table>
             </div>
+            ${permissionEntriesHTML ? `
+            <div class="week-permissions-section">
+                <div class="details-section-title">Permissions This Week</div>
+                ${permissionEntriesHTML}
+            </div>
+            ` : ''}
             <div class="week-stat-grid">
                 <div class="week-stat-card present">
                     <span class="week-stat-label">Present</span>
@@ -1291,7 +1433,8 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
                     <span class="week-stat-value">${weekly.excused}</span>
                 </div>
             </div>
-            <div class="custom-modal-actions">
+            <div class="custom-modal-actions has-export">
+                <button type="button" class="custom-modal-cancel details-export-btn"><i class="fas fa-download"></i> Export Week</button>
                 <button type="button" class="custom-modal-confirm details-close-btn">Close</button>
             </div>
         </div>
@@ -1308,6 +1451,92 @@ function showAttendanceWeekModal({ intern, weekDays, weekly }) {
     overlay.addEventListener('click', (event) => {
         if (event.target === overlay) close();
     });
+
+    const exportBtn = overlay.querySelector('.details-export-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => exportAttendanceWeekToCSV({ intern, weekDays, weekly }));
+    }
+}
+
+/*
+  Exports the same weekly attendance breakdown shown in the "View details"
+  popup on the Attendance page (one row per weekday, plus every excuse or
+  permission taken that day) as a standalone CSV for a single intern.
+  Separate from exportToCSV(), which dumps every intern's attendance into one
+  bulk file — the page's main Export button keeps using that bulk exporter.
+*/
+function exportAttendanceWeekToCSV({ intern, weekDays, weekly }) {
+    try {
+        const weekStart = weekDays[0]?.dateStr || '';
+        const weekEnd = weekDays[weekDays.length - 1]?.dateStr || '';
+
+        let csv = '';
+
+        // Header block: who this export is for and which week it covers.
+        csv += [escapeCSVValue('Name'), escapeCSVValue(`${intern.firstName} ${intern.lastName}`)].join(',') + '\n';
+        csv += [escapeCSVValue('Intern ID'), escapeCSVValue(intern.internId)].join(',') + '\n';
+        csv += [escapeCSVValue('Department'), escapeCSVValue(intern.department)].join(',') + '\n';
+        csv += [escapeCSVValue('Week'), escapeCSVValue(`${weekStart} to ${weekEnd}`)].join(',') + '\n';
+        csv += '\n';
+
+        // Day-by-day status table (Mon-Fri), each with its check in/out times
+        // and any excuse or permission notes taken that day.
+        csv += ['Day', 'Date', 'Check In', 'Check Out', 'Status', 'Excuse / Permission Notes']
+            .map(escapeCSVValue).join(',') + '\n';
+
+        weekDays.forEach(day => {
+            const status = day.status || (day.isFuture ? '-' : (day.isToday ? 'Pending' : 'Absent'));
+
+            const noteParts = [];
+            if (day.excuseReason) noteParts.push(`Excuse: ${day.excuseReason}`);
+
+            if (day.permissionHistory && day.permissionHistory.length > 0) {
+                day.permissionHistory.forEach((entry, index) => {
+                    const timeRange = `${entry.fromTime || '-'} to ${entry.toTime || '-'}`;
+                    const returned = entry.actualReturnTime ? `returned ${entry.actualReturnTime}` : 'not yet returned';
+                    noteParts.push(`Permission ${index + 1}: ${entry.reason || '-'} (${timeRange}) approved by ${entry.supervisorName || '-'}, ${returned}`);
+                });
+            } else if (day.permissionReason) {
+                let fallback = `Permission: ${day.permissionReason}${day.permissionTime ? ` (${day.permissionTime})` : ''}`;
+                if (day.permissionSupervisorName) fallback += `, approved by ${day.permissionSupervisorName}`;
+                if (day.permissionActualReturnTime) fallback += `, returned ${day.permissionActualReturnTime}`;
+                noteParts.push(fallback);
+            }
+
+            const notes = noteParts.length > 0 ? noteParts.join(' | ') : '-';
+
+            csv += [
+                escapeCSVValue(day.label),
+                escapeCSVValue(day.dateStr),
+                escapeCSVValue(day.checkIn || '-'),
+                escapeCSVValue(day.checkOut || '-'),
+                escapeCSVValue(status),
+                escapeCSVValue(notes)
+            ].join(',') + '\n';
+        });
+
+        csv += '\n';
+
+        // Weekly totals, matching the stat cards shown in the modal.
+        csv += [escapeCSVValue('Weekly Summary'), ''].join(',') + '\n';
+        csv += [escapeCSVValue('Present'), escapeCSVValue(weekly.present)].join(',') + '\n';
+        csv += [escapeCSVValue('Late'), escapeCSVValue(weekly.late)].join(',') + '\n';
+        csv += [escapeCSVValue('Absent'), escapeCSVValue(weekly.absent)].join(',') + '\n';
+        csv += [escapeCSVValue('Excused'), escapeCSVValue(weekly.excused)].join(',') + '\n';
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeName = `${intern.firstName}_${intern.lastName}`.replace(/\s+/g, '_');
+        a.download = `attendance_${safeName}_${weekStart}_to_${weekEnd}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showAlert('Weekly attendance exported successfully.', 'success');
+    } catch (error) {
+        showAlert('Error exporting weekly attendance: ' + error, 'error');
+    }
 }
 
 function bindAttendanceSelectionControls() {
@@ -3072,20 +3301,41 @@ async function checkOutAttendance(internId) {
 
 async function recordTemporaryPermission(internId) {
     try {
-        const intern = await getInternById(internId);
+        const [intern, supervisors] = await Promise.all([
+            getInternById(internId),
+            getAllSupervisors()
+        ]);
         if (!intern) {
             showAlert('Intern record was not found.', 'warning');
             return;
         }
 
-        const today = getLocalDateString();
+        const now = new Date();
+        const today = getLocalDateString(now);
         const existingRecords = await getAttendanceByInternId(internId);
         const existingRecord = existingRecords.find(record => record.date === today);
+        const activePermission = isPermissionActive(existingRecord);
+        const permissionHistory = existingRecord?.permissionHistory || [];
+
+        if (!activePermission && permissionHistory.length >= DAILY_PERMISSION_LIMIT) {
+            showAlert(`${intern.firstName} ${intern.lastName} has already used the maximum of ${DAILY_PERMISSION_LIMIT} permissions allowed today.`, 'warning', 5000);
+            return;
+        }
+
+        const supervisorOptions = [
+            { value: '', label: 'Choose supervisor...' },
+            ...supervisors.map(supervisor => ({
+                value: supervisor.id,
+                label: `${supervisor.firstName} ${supervisor.lastName} - ${supervisor.department || 'No department'}`
+            }))
+        ];
 
         const values = await showCustomModal({
             title: 'Temporary Permission',
             message: `${intern.firstName} ${intern.lastName}`,
             confirmText: 'Save Permission',
+            secondaryText: activePermission ? 'Rechecked In' : '',
+            secondaryValue: { action: 'recheckedIn' },
             fields: [
                 {
                     name: 'reason',
@@ -3094,42 +3344,82 @@ async function recordTemporaryPermission(internId) {
                     placeholder: 'e.g. Bank errand, medical appointment'
                 },
                 {
-                    name: 'date',
-                    label: 'Permission date',
-                    type: 'date',
-                    value: existingRecord?.permissionDate || today
+                    name: 'supervisorId',
+                    label: 'Supervisor who gave permission',
+                    type: 'select',
+                    value: existingRecord?.permissionSupervisorId || '',
+                    options: supervisorOptions
                 },
                 {
-                    name: 'fromTime',
-                    label: 'Departure time',
-                    type: 'time',
-                    value: existingRecord?.permissionFromTime || ''
-                },
-                {
-                    name: 'toTime',
-                    label: 'Expected return time',
-                    type: 'time',
-                    value: existingRecord?.permissionToTime || ''
+                    name: 'durationHours',
+                    label: 'Hours out',
+                    type: 'number',
+                    value: existingRecord?.permissionDurationHours || '',
+                    placeholder: 'e.g. 2',
+                    inputmode: 'decimal',
+                    helpText: 'Coverage ends automatically after this number of hours.'
                 }
             ]
         });
 
         if (!values) return;
+        if (values.action === 'recheckedIn') {
+            await recordPermissionReturn(internId);
+            return;
+        }
 
         const reason = (values.reason || '').trim();
-        const permissionDate = values.date || today;
-        const fromTime = values.fromTime || '';
-        const toTime = values.toTime || '';
+        const supervisorId = Number(values.supervisorId);
+        const permissionSupervisor = supervisors.find(supervisor => supervisor.id === supervisorId);
+        const durationHours = Number(values.durationHours);
 
-        if (!reason || !permissionDate || !fromTime || !toTime) {
-            showAlert('Please provide the permission reason, date, departure time, and return time.', 'warning');
+        if (!reason || !permissionSupervisor || !Number.isFinite(durationHours) || durationHours <= 0) {
+            showAlert('Please provide the permission reason, supervisor, and a valid number of hours.', 'warning');
             return;
         }
 
-        if (fromTime >= toTime) {
-            showAlert('Expected return time must be after the departure time.', 'warning');
-            return;
-        }
+        const permissionEndsAt = addHoursToDate(now, durationHours);
+        const permissionDate = today;
+        const fromTime = formatTimeInputValue(now);
+        const toTime = formatTimeInputValue(permissionEndsAt);
+        const supervisorName = `${permissionSupervisor.firstName} ${permissionSupervisor.lastName}`;
+        const recordedAt = new Date().toISOString();
+
+        // If the intern is still out on their current permission, this save is
+        // just editing that same entry's details — update it in place rather
+        // than logging a second permission. Otherwise it's a brand-new
+        // permission for the day, so it gets appended to the history so
+        // earlier permissions from the same day are kept (not overwritten).
+        const permissionEntry = {
+            reason,
+            supervisorId: permissionSupervisor.id,
+            supervisorName,
+            durationHours,
+            date: permissionDate,
+            fromTime,
+            toTime,
+            endsAt: permissionEndsAt.toISOString(),
+            recordedAt,
+            actualReturnTime: null,
+            actualReturnedAt: null
+        };
+
+        const updatedHistory = (activePermission && permissionHistory.length > 0)
+            ? permissionHistory.map((entry, index) =>
+                index === permissionHistory.length - 1
+                    ? { ...entry, ...permissionEntry, actualReturnTime: entry.actualReturnTime, actualReturnedAt: entry.actualReturnedAt }
+                    : entry)
+            : [...permissionHistory, permissionEntry];
+
+        // The top-level permission* fields on the record are meant to reflect
+        // whichever permission is CURRENT (the latest one), so isPermissionActive()
+        // can check them directly. Spreading ...existingRecord below would
+        // otherwise leave a stale permissionActualReturnTime/ActualReturnedAt
+        // from a previous, already-returned permission sitting on the record —
+        // which made isPermissionActive() think this brand-new permission was
+        // already returned before it even started. Pulling both fields from
+        // the current history entry keeps them in sync every time.
+        const currentEntry = updatedHistory[updatedHistory.length - 1];
 
         const recordToSave = {
             ...(existingRecord || {
@@ -3146,11 +3436,19 @@ async function recordTemporaryPermission(internId) {
                 createdAt: new Date().toISOString()
             }),
             permissionReason: reason,
+            permissionSupervisorId: permissionSupervisor.id,
+            permissionSupervisorName: supervisorName,
+            permissionDurationHours: durationHours,
             permissionDate,
             permissionFromTime: fromTime,
             permissionToTime: toTime,
-            permissionRecordedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            permissionEndsAt: permissionEndsAt.toISOString(),
+            permissionRecordedAt: recordedAt,
+            permissionActualReturnTime: currentEntry.actualReturnTime,
+            permissionActualReturnedAt: currentEntry.actualReturnedAt,
+            permissionHistory: updatedHistory,
+            permissionCount: updatedHistory.length,
+            updatedAt: recordedAt
         };
 
         if (existingRecord) {
@@ -3159,10 +3457,50 @@ async function recordTemporaryPermission(internId) {
             await addAttendance(recordToSave);
         }
 
-        showAlert('Temporary permission recorded successfully.', 'success');
+        const remaining = Math.max(DAILY_PERMISSION_LIMIT - updatedHistory.length, 0);
+        showAlert(`Temporary permission recorded for ${durationHours} hour${durationHours === 1 ? '' : 's'}. Company coverage ends at ${formatExactTime(permissionEndsAt)}. (${remaining} of ${DAILY_PERMISSION_LIMIT} permissions left today)`, 'success', 5000);
         await loadAttendanceTable();
     } catch (error) {
         showAlert('Error recording permission: ' + error, 'error');
+    }
+}
+
+async function recordPermissionReturn(internId) {
+    try {
+        const today = getLocalDateString();
+        const existingRecords = await getAttendanceByInternId(internId);
+        const existingRecord = existingRecords.find(record => record.date === today);
+
+        if (!existingRecord || !isPermissionActive(existingRecord)) {
+            showAlert('No active permission was found for this intern.', 'warning');
+            await loadAttendanceTable();
+            return;
+        }
+
+        const now = new Date();
+        const actualReturnTime = formatExactTime(now);
+        const returnedAt = now.toISOString();
+
+        const history = existingRecord.permissionHistory || [];
+        const updatedHistory = history.length > 0
+            ? history.map((entry, index) =>
+                index === history.length - 1
+                    ? { ...entry, actualReturnTime, actualReturnedAt: returnedAt }
+                    : entry)
+            : history;
+
+        await dbPut('attendance', {
+            ...existingRecord,
+            permissionActualReturnTime: actualReturnTime,
+            permissionActualReturnedAt: returnedAt,
+            permissionHistory: updatedHistory,
+            updatedAt: returnedAt
+        });
+
+        showAlert(`Permission return recorded at ${actualReturnTime}.`, 'success', 4000);
+        await loadAttendanceTable();
+    } catch (error) {
+        showAlert('Error recording permission return: ' + error, 'error');
     }
 }
 
