@@ -3184,7 +3184,7 @@ async function saveSettingsForm(event) {
 function determineAttendanceStatus(date) {
     const totalMinutes = date.getHours() * 60 + date.getMinutes();
     const presentCutoff = 7 * 60;        // 7:00 AM
-    const absentCutoff = 16 * 60 + 30;   // 1:25 PM
+    const absentCutoff = 16 * 60 + 30;   // 4:30 PM
 
     if (totalMinutes < presentCutoff) {
         return 'Present';
